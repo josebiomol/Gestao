@@ -52,6 +52,14 @@ function updateThemeBtn() {
 
 // Inicializar tema
 initTheme();
+
+// Restaurar nome da loja se houver hhId salvo
+const savedHouseholdName = localStorage.getItem('householdName');
+const savedHhId = localStorage.getItem('hhId');
+if (savedHhId && savedHouseholdName) {
+  $('appTitle').textContent = savedHouseholdName;
+}
+
 // ========== FIM THEME ==========
 
 // ========== SEGURANÇA V3.0 ==========
@@ -271,6 +279,9 @@ $('logoutBtn').addEventListener('click', () => {
 function showHouseholds() {
   // Resetar título para nome do sistema
   $('appTitle').textContent = 'Gestão';
+  localStorage.removeItem('householdName'); // Limpar nome salvo
+  
+  console.log('Households disponíveis:', S.households);
   
   $('householdsView').classList.remove('hidden');
   $('mainView').classList.add('hidden');
@@ -284,6 +295,13 @@ function showMain() {
 
 function renderHouseholds() {
   const list = $('hhList');
+  
+  if (!S.households || S.households.length === 0) {
+    console.log('Nenhuma loja disponível');
+    list.innerHTML = '<p style="padding:20px;text-align:center;color:var(--text-secondary)">Nenhuma loja disponível</p>';
+    return;
+  }
+  
   list.innerHTML = S.households.map(hh => `
     <div class="hh-card" onclick="selectHousehold('${hh.household_id}', '${hh.nome}')">
       <div>
@@ -298,6 +316,7 @@ function renderHouseholds() {
 function selectHousehold(hhId, nome) {
   S.hhId = String(hhId);
   localStorage.setItem('hhId', S.hhId);
+  localStorage.setItem('householdName', nome); // Guardar nome da loja
   
   // Atualizar título do app com nome da loja
   $('appTitle').textContent = nome;
