@@ -982,8 +982,8 @@ function closeNewUserModal() {
 }
 
 function loadGroupsForSelect() {
-  // Carregar grupos para dropdown
-  jsonp(`${API}?action=getGroups&org_id=${encodeURIComponent(S.orgId)}&email=${encodeURIComponent(S.email)}&senha=${encodeURIComponent(S.senha)}`)
+  // Carregar grupos para dropdown - RETORNA PROMISE
+  return jsonp(`${API}?action=getGroups&org_id=${encodeURIComponent(S.orgId)}&email=${encodeURIComponent(S.email)}&senha=${encodeURIComponent(S.senha)}`)
     .then(d => {
       if (d.error) {
         console.error('Erro ao carregar grupos:', d.error);
@@ -1245,14 +1245,13 @@ async function editUser(userId) {
     $('newUserPassword').value = ''; // Deixar vazio - senha opcional
     
     // Carregar grupos e selecionar o do usuário
-    loadGroupsForSelect();
+    await loadGroupsForSelect();
     console.log('DEBUG group_id do usuário (tipo):', typeof user.group_id, 'valor:', user.group_id);
     
-    setTimeout(() => {
-      const groupIdStr = String(user.group_id || '');
-      $('newUserGroup').value = groupIdStr;
-      console.log('DEBUG dropdown value setado para:', groupIdStr, 'options:', Array.from($('newUserGroup').options).map(o => o.value));
-    }, 100);
+    // Agora setar o valor (sem setTimeout)
+    const groupIdStr = String(user.group_id || '');
+    $('newUserGroup').value = groupIdStr;
+    console.log('DEBUG dropdown value setado para:', groupIdStr, 'options:', Array.from($('newUserGroup').options).map(o => o.value));
     
     // Desmarcar e marcar permissões
     document.querySelectorAll('.user-permission').forEach(cb => {
