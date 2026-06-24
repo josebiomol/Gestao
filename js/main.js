@@ -533,36 +533,52 @@ async function loadBulkEditCategories() {
     const d = await jsonp(`${API}?action=getCategories&org_id=${encodeURIComponent(S.orgId)}&email=${encodeURIComponent(S.email)}&senha=${encodeURIComponent(S.senha)}`);
     if (d.error || !d.categories) return;
     
-    const catDiv = document.getElementById('bulkEditCats') || document.createElement('div');
-    catDiv.id = 'bulkEditCats';
-    catDiv.style.cssText = 'display:flex;gap:8px;flex-wrap:wrap;margin:12px 0';
+    const catDiv = document.getElementById('bulkEditCats');
+    if (!catDiv) return;
+    
     catDiv.innerHTML = '';
     
+    // Botão Geral
     const generalBtn = document.createElement('button');
     generalBtn.textContent = 'Geral';
     generalBtn.type = 'button';
-    generalBtn.style.cssText = 'padding:8px 12px;border:2px solid #E7E8E6;background:white;border-radius:8px;cursor:pointer;font-size:13px';
     generalBtn.dataset.cat = '';
-    generalBtn.onclick = () => selectBulkCategory(generalBtn);
+    generalBtn.style.cssText = 'padding:8px 12px;border:2px solid #E7E8E6;background:white;border-radius:8px;cursor:pointer;font-size:13px;transition:all 0.2s';
+    
+    generalBtn.addEventListener('click', function(e) {
+      e.preventDefault();
+      document.querySelectorAll('#bulkEditCats button').forEach(b => {
+        b.style.borderColor = '#E7E8E6';
+        b.style.color = 'var(--text)';
+      });
+      this.style.borderColor = '#16A34A';
+      this.style.color = '#16A34A';
+    });
+    
     catDiv.appendChild(generalBtn);
     
+    // Botões de categorias
     d.categories.forEach(cat => {
       const btn = document.createElement('button');
       btn.innerHTML = `${cat.emoji || ''} ${cat.nome}`;
       btn.type = 'button';
-      btn.style.cssText = 'padding:8px 12px;border:2px solid #E7E8E6;background:white;border-radius:8px;cursor:pointer;font-size:13px;display:flex;align-items:center;gap:4px';
       btn.dataset.cat = cat.nome;
-      btn.onclick = () => selectBulkCategory(btn);
+      btn.style.cssText = 'padding:8px 12px;border:2px solid #E7E8E6;background:white;border-radius:8px;cursor:pointer;font-size:13px;display:flex;align-items:center;gap:4px;transition:all 0.2s';
+      
+      btn.addEventListener('click', function(e) {
+        e.preventDefault();
+        document.querySelectorAll('#bulkEditCats button').forEach(b => {
+          b.style.borderColor = '#E7E8E6';
+          b.style.color = 'var(--text)';
+        });
+        this.style.borderColor = '#16A34A';
+        this.style.color = '#16A34A';
+      });
+      
       catDiv.appendChild(btn);
     });
-    
-    let bulkModal = document.getElementById('bulkEditModal');
-    if (bulkModal) {
-      const catContainer = bulkModal.querySelector('.bulk-cat-container');
-      if (catContainer) catContainer.innerHTML = catDiv.innerHTML;
-    }
   } catch (err) {
-    console.log('Erro ao carregar categorias');
+    console.log('Erro ao carregar categorias:', err);
   }
 }
 
@@ -592,16 +608,18 @@ async function applyBulkEdit() {
     return;
   }
   
-  const selectedBtn = document.querySelector('[data-selected="true"]');
-  const newCategory = selectedBtn ? selectedBtn.dataset.cat : '';
+  // Procurar botão com cor verde (selecionado)
+  const selectedBtn = Array.from(document.querySelectorAll('#bulkEditCats button')).find(btn => {
+    const style = btn.getAttribute('style');
+    return style && style.includes('16A34A');
+  });
   
-  console.log('Itens selecionados:', selected);
-  console.log('Categoria nova:', newCategory);
-  
-  if (!newCategory && selectedBtn?.textContent.trim() !== 'Geral') {
-    toast('Selecione categoria', 'warning');
+  if (!selectedBtn) {
+    toast('Selecione uma categoria', 'warning');
     return;
   }
+  
+  const newCategory = selectedBtn.dataset.cat;
   
   toast('Atualizando...', 'loading');
   
@@ -614,6 +632,7 @@ async function applyBulkEdit() {
     }
     
     closeBulkEditModal();
+    toggleSelectMode();
     loadItems();
     toast('✓ Categorias atualizadas', 'success');
   } catch (err) {
