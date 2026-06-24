@@ -18,6 +18,40 @@ const S = {
   permissions: []
 };
 
+// ========== THEME ==========
+function initTheme() {
+  const savedTheme = localStorage.getItem('gestao-theme') || 'light';
+  setTheme(savedTheme);
+}
+
+function setTheme(theme) {
+  if (theme === 'dark') {
+    document.documentElement.setAttribute('data-theme', 'dark');
+    localStorage.setItem('gestao-theme', 'dark');
+  } else {
+    document.documentElement.removeAttribute('data-theme');
+    localStorage.setItem('gestao-theme', 'light');
+  }
+  updateThemeBtn();
+}
+
+function toggleTheme() {
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  setTheme(isDark ? 'light' : 'dark');
+}
+
+function updateThemeBtn() {
+  const btn = document.getElementById('themeBtn');
+  if (btn) {
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    btn.innerHTML = isDark ? '☀️' : '🌙';
+  }
+}
+
+// Inicializar tema
+initTheme();
+// ========== FIM THEME ==========
+
 // ========== SEGURANÇA V3.0 ==========
 let appSecurity = null;
 
