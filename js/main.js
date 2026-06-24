@@ -322,16 +322,6 @@ function renderItems() {
   
   html += '</ul>';
   content.innerHTML = html;
-  
-  // Adicionar botão "Mudar categoria" em modo seleção
-  if (isSelectMode) {
-    const btn = document.createElement('button');
-    btn.className = 'btn-p';
-    btn.textContent = 'Mudar categoria';
-    btn.style.cssText = 'margin-top:12px;width:100%';
-    btn.onclick = openBulkEditModal;
-    content.appendChild(btn);
-  }
 }
 
 function updateEditButton() {
@@ -503,12 +493,28 @@ async function toggleSelectMode() {
     mainView.setAttribute('data-select-mode', 'false');
     const editBtn = document.querySelector('[data-edit-btn]');
     if (editBtn) editBtn.innerHTML = '✎';
+    const bulkBtn = document.querySelector('[data-bulk-btn]');
+    if (bulkBtn) bulkBtn.remove();
     loadItems();
   } else {
     // Ativar modo
     mainView.setAttribute('data-select-mode', 'true');
     const editBtn = document.querySelector('[data-edit-btn]');
     if (editBtn) editBtn.innerHTML = '✕';
+    
+    // Adicionar botão "Mudar categoria"
+    const filterRow = document.querySelector('.filter-row');
+    if (filterRow && !filterRow.querySelector('[data-bulk-btn]')) {
+      const bulkBtn = document.createElement('button');
+      bulkBtn.type = 'button';
+      bulkBtn.className = 'btn-p';
+      bulkBtn.textContent = 'Mudar categoria';
+      bulkBtn.style.cssText = 'flex:1;margin:0;';
+      bulkBtn.setAttribute('data-bulk-btn', 'true');
+      bulkBtn.onclick = openBulkEditModal;
+      filterRow.appendChild(bulkBtn);
+    }
+    
     loadItems();
   }
 }
@@ -619,8 +625,8 @@ async function applyBulkEdit() {
     return;
   }
   
-  // Procurar botão com cor verde (selecionado)
-  const selectedBtn = Array.from(document.querySelectorAll('#bulkEditCats button')).find(btn => {
+  // Procurar botão com cor verde (selecionado) - CORRETO: .bulk-cat-container
+  const selectedBtn = Array.from(document.querySelectorAll('.bulk-cat-container button')).find(btn => {
     const style = btn.getAttribute('style');
     return style && style.includes('16A34A');
   });
@@ -631,12 +637,14 @@ async function applyBulkEdit() {
   }
   
   const newCategory = selectedBtn.dataset.cat;
+  console.log('Enviando update:', { selected, newCategory });
   
   toast('Atualizando...', 'loading');
   
   try {
     const d = await jsonp(`${API}?action=updateItemsCategory&item_ids=${encodeURIComponent(JSON.stringify(selected))}&categoria=${encodeURIComponent(newCategory)}&household_id=${encodeURIComponent(S.hhId)}&email=${encodeURIComponent(S.email)}&senha=${encodeURIComponent(S.senha)}`);
     
+    console.log('Resposta update:', d);
     if (d.error) {
       toast(d.error, 'danger');
       return;
@@ -647,6 +655,7 @@ async function applyBulkEdit() {
     loadItems();
     toast('✓ Categorias atualizadas', 'success');
   } catch (err) {
+    console.log('Erro:', err);
     toast('Erro ao atualizar', 'danger');
   }
 }
