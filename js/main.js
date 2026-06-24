@@ -1246,11 +1246,12 @@ async function editUser(userId) {
     
     // Carregar grupos e selecionar o do usuário
     loadGroupsForSelect();
-    console.log('DEBUG group_id do usuário:', user.group_id);
+    console.log('DEBUG group_id do usuário (tipo):', typeof user.group_id, 'valor:', user.group_id);
     
     setTimeout(() => {
-      $('newUserGroup').value = user.group_id || '';
-      console.log('DEBUG dropdown value setado para:', $('newUserGroup').value);
+      const groupIdStr = String(user.group_id || '');
+      $('newUserGroup').value = groupIdStr;
+      console.log('DEBUG dropdown value setado para:', groupIdStr, 'options:', Array.from($('newUserGroup').options).map(o => o.value));
     }, 100);
     
     // Desmarcar e marcar permissões
