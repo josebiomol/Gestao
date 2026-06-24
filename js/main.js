@@ -708,6 +708,7 @@ async function loadBulkEditCategories() {
     generalBtn.textContent = 'Geral';
     generalBtn.type = 'button';
     generalBtn.dataset.cat = '';
+    generalBtn.dataset.selected = 'false';
     generalBtn.style.cssText = 'padding:8px 12px;border:2px solid #E7E8E6;background:white;border-radius:8px;cursor:pointer;font-size:13px;transition:all 0.2s';
     
     generalBtn.addEventListener('click', function(e) {
@@ -715,9 +716,11 @@ async function loadBulkEditCategories() {
       document.querySelectorAll('.bulk-cat-container button').forEach(b => {
         b.style.borderColor = '#E7E8E6';
         b.style.color = 'var(--text)';
+        b.dataset.selected = 'false';
       });
       this.style.borderColor = '#16A34A';
       this.style.color = '#16A34A';
+      this.dataset.selected = 'true';
       console.log('Categoria selecionada: Geral');
     });
     
@@ -729,6 +732,7 @@ async function loadBulkEditCategories() {
       btn.innerHTML = `${cat.emoji || ''} ${cat.nome}`;
       btn.type = 'button';
       btn.dataset.cat = cat.nome;
+      btn.dataset.selected = 'false';
       btn.style.cssText = 'padding:8px 12px;border:2px solid #E7E8E6;background:white;border-radius:8px;cursor:pointer;font-size:13px;display:flex;align-items:center;gap:4px;transition:all 0.2s';
       
       btn.addEventListener('click', function(e) {
@@ -736,9 +740,11 @@ async function loadBulkEditCategories() {
         document.querySelectorAll('.bulk-cat-container button').forEach(b => {
           b.style.borderColor = '#E7E8E6';
           b.style.color = 'var(--text)';
+          b.dataset.selected = 'false';
         });
         this.style.borderColor = '#16A34A';
         this.style.color = '#16A34A';
+        this.dataset.selected = 'true';
         console.log('Categoria selecionada:', cat.nome);
       });
       
@@ -781,11 +787,8 @@ async function applyBulkEdit() {
     return;
   }
   
-  // Procurar botão com cor verde (selecionado) no bulk-cat-container
-  const selectedBtn = Array.from(document.querySelectorAll('.bulk-cat-container button')).find(btn => {
-    const style = btn.getAttribute('style');
-    return style && style.includes('16A34A');
-  });
+  // Procurar botão com data-selected='true'
+  const selectedBtn = document.querySelector('.bulk-cat-container button[data-selected="true"]');
   
   console.log('Botão categoria encontrado:', selectedBtn);
   
