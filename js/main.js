@@ -718,6 +718,7 @@ async function loadBulkEditCategories() {
       });
       this.style.borderColor = '#16A34A';
       this.style.color = '#16A34A';
+      console.log('Categoria selecionada: Geral');
     });
     
     catDiv.appendChild(generalBtn);
@@ -738,6 +739,7 @@ async function loadBulkEditCategories() {
         });
         this.style.borderColor = '#16A34A';
         this.style.color = '#16A34A';
+        console.log('Categoria selecionada:', cat.nome);
       });
       
       catDiv.appendChild(btn);
@@ -779,7 +781,7 @@ async function applyBulkEdit() {
     return;
   }
   
-  // Procurar botão com cor verde (selecionado)
+  // Procurar botão com cor verde (selecionado) no bulk-cat-container
   const selectedBtn = Array.from(document.querySelectorAll('.bulk-cat-container button')).find(btn => {
     const style = btn.getAttribute('style');
     return style && style.includes('16A34A');
@@ -792,24 +794,31 @@ async function applyBulkEdit() {
     return;
   }
   
-  const newCategory = selectedBtn.dataset.cat;
+  const newCategory = selectedBtn.dataset.cat || 'Geral';
   console.log('Enviando update:', { selected, newCategory });
   
   toast('Atualizando...', 'loading');
   
   try {
-    const d = await jsonp(`${API}?action=updateItemsCategory&item_ids=${encodeURIComponent(JSON.stringify(selected))}&categoria=${encodeURIComponent(newCategory)}&household_id=${encodeURIComponent(S.hhId)}&email=${encodeURIComponent(S.email)}&senha=${encodeURIComponent(S.senha)}`);
+    const url = `${API}?action=updateItemsCategory&item_ids=${encodeURIComponent(JSON.stringify(selected))}&categoria=${encodeURIComponent(newCategory)}&household_id=${encodeURIComponent(S.hhId)}&email=${encodeURIComponent(S.email)}&senha=${encodeURIComponent(S.senha)}`;
+    console.log('URL chamada:', url);
+    
+    const d = await jsonp(url);
     
     console.log('Resposta update:', d);
-    if (d.error) {
+    if (d && d.error) {
       toast(d.error, 'danger');
       return;
     }
     
-    closeBulkEditModal();
-    toggleSelectMode();
-    loadItems();
-    toast('✓ Categorias atualizadas', 'success');
+    if (d && d.success) {
+      toast(`✓ ${d.updated} itens atualizados`, 'success');
+      closeBulkEditModal();
+      toggleSelectMode();
+      loadItems();
+    } else {
+      toast('Erro ao atualizar', 'danger');
+    }
   } catch (err) {
     console.log('Erro:', err);
     toast('Erro ao atualizar', 'danger');
