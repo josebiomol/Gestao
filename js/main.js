@@ -336,6 +336,9 @@ function selectHousehold(hhId, nome) {
   // Atualizar título do app com nome da loja
   $('appTitle').textContent = nome;
   
+  // Limpar items antigos ANTES de carregar
+  S.items = [];
+  
   showMain();
   loadItems();
   toast(`Loja: ${nome}`, 'success');
