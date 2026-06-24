@@ -388,7 +388,7 @@ async function loadCategories() {
     const generalBtn = document.createElement('button');
     generalBtn.textContent = 'Geral';
     generalBtn.type = 'button';
-    generalBtn.style.cssText = 'padding:8px 12px;border:2px solid #E7E8E6;background:white;border-radius:8px;cursor:pointer;font-size:13px';
+    generalBtn.style.cssText = 'padding:8px 12px;border:2px solid #E7E8E6;background:white;border-radius:8px;cursor:pointer;font-size:13px;flex:0 1 calc(20% - 7px)';
     generalBtn.dataset.cat = '';
     generalBtn.dataset.emoji = '';
     generalBtn.onclick = () => selectCategory(generalBtn);
@@ -398,7 +398,7 @@ async function loadCategories() {
       const btn = document.createElement('button');
       btn.innerHTML = `${cat.emoji || ''} ${cat.nome}`;
       btn.type = 'button';
-      btn.style.cssText = 'padding:8px 12px;border:2px solid #E7E8E6;background:white;border-radius:8px;cursor:pointer;font-size:13px;display:flex;align-items:center;gap:4px';
+      btn.style.cssText = 'padding:8px 12px;border:2px solid #E7E8E6;background:white;border-radius:8px;cursor:pointer;font-size:13px;display:flex;align-items:center;gap:4px;flex:0 1 calc(20% - 7px);justify-content:center';
       btn.dataset.cat = cat.nome;
       btn.dataset.emoji = cat.emoji || '';
       btn.onclick = () => selectCategory(btn);
