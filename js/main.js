@@ -917,6 +917,240 @@ function initBulkEditUI() {
 }
 
 // Inicializar UI ao carregar
+// ========== SETTINGS / CONFIGURAÇÕES ==========
+function openSettings() {
+  $('settingsModal').classList.remove('hidden');
+  switchSettingsTab('usuarios');
+}
+
+function closeSettings() {
+  $('settingsModal').classList.add('hidden');
+}
+
+function switchSettingsTab(tabName) {
+  // Esconder todas as abas
+  document.querySelectorAll('.settings-tab-content').forEach(el => el.classList.add('hidden'));
+  document.querySelectorAll('.settings-tab').forEach(el => el.classList.remove('active'));
+  
+  // Mostrar aba selecionada
+  const tabEl = document.getElementById(`tab-${tabName}`);
+  if (tabEl) {
+    tabEl.classList.remove('hidden');
+  }
+  
+  // Marcar botão como ativo
+  document.querySelector(`[data-tab="${tabName}"]`)?.classList.add('active');
+  
+  // Carregar conteúdo
+  if (tabName === 'usuarios') {
+    loadUsersList();
+  } else if (tabName === 'grupos') {
+    loadGroupsList();
+  } else if (tabName === 'categorias') {
+    loadCategoriesList();
+  }
+}
+
+function openNewUserModal() {
+  $('newUserModal').classList.remove('hidden');
+  renderAccessibleHouseholds();
+  renderAccessScheduleTable();
+  loadGroupsForSelect();
+}
+
+function closeNewUserModal() {
+  $('newUserModal').classList.add('hidden');
+  document.getElementById('newUserForm').reset();
+}
+
+function loadGroupsForSelect() {
+  // Carregar grupos para dropdown
+  // TODO: implementar depois
+}
+
+function renderAccessibleHouseholds() {
+  const container = $('accessibleHouseholdsList');
+  container.innerHTML = '';
+  
+  if (!S.households || S.households.length === 0) return;
+  
+  S.households.forEach((hh, idx) => {
+    const isFirst = idx === 0;
+    const label = document.createElement('label');
+    label.style.cssText = 'display:flex;align-items:center;gap:8px;padding:8px;border:1px solid var(--border);border-radius:6px;cursor:pointer';
+    label.innerHTML = `
+      <input type="checkbox" name="accessible_hh" value="${hh.household_id}" ${isFirst ? 'checked' : ''} data-primary="${isFirst}">
+      <span style="font-size:13px">${hh.nome}${isFirst ? ' (principal)' : ''}</span>
+    `;
+    container.appendChild(label);
+  });
+}
+
+function renderAccessScheduleTable() {
+  const container = $('accessScheduleTable');
+  container.innerHTML = '';
+  
+  const dias = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+  
+  dias.forEach(dia => {
+    const row = document.createElement('div');
+    row.className = 'schedule-row';
+    row.innerHTML = `
+      <label style="margin:0;padding:0">
+        <input type="checkbox" class="schedule-checkbox" data-dia="${dia}" ${dia !== 'Domingo' && dia !== 'Sábado' ? 'checked' : ''}>
+      </label>
+      <span style="font-size:13px;font-weight:600;min-width:70px">${dia}</span>
+      <input type="time" class="schedule-time" data-dia="${dia}" data-type="start" value="08:00" disabled style="font-size:12px">
+      <input type="time" class="schedule-time" data-dia="${dia}" data-type="end" value="18:00" disabled style="font-size:12px">
+    `;
+    
+    const checkbox = row.querySelector('.schedule-checkbox');
+    const times = row.querySelectorAll('.schedule-time');
+    
+    checkbox.addEventListener('change', (e) => {
+      times.forEach(t => t.disabled = !e.target.checked);
+    });
+    
+    container.appendChild(row);
+  });
+}
+
+async function saveNewUser() {
+  const nome = $('newUserName').value.trim();
+  const email = $('newUserEmail').value.trim();
+  const senha = $('newUserPassword').value;
+  const group_id = $('newUserGroup').value;
+  
+  if (!nome || !email || !senha) {
+    toast('Preencha todos os campos', 'warning');
+    return;
+  }
+  
+  if (senha.length < 6) {
+    toast('Senha deve ter mínimo 6 caracteres', 'warning');
+    return;
+  }
+  
+  // Coletar permissões
+  const permissions = [];
+  document.querySelectorAll('.user-permission:checked').forEach(cb => {
+    const id = cb.id.replace('perm-', '');
+    permissions.push(id);
+  });
+  
+  // Coletar lojas acessíveis
+  const accessible_hh = [];
+  document.querySelectorAll('input[name="accessible_hh"]:checked').forEach(cb => {
+    accessible_hh.push(cb.value);
+  });
+  
+  // Coletar horários
+  const access_schedule = {};
+  document.querySelectorAll('.schedule-checkbox').forEach(cb => {
+    const dia = cb.dataset.dia;
+    access_schedule[dia.toLowerCase()] = {
+      enabled: cb.checked,
+      start: cb.checked ? document.querySelector(`input[data-dia="${dia}"][data-type="start"]`).value : null,
+      end: cb.checked ? document.querySelector(`input[data-dia="${dia}"][data-type="end"]`).value : null
+    };
+  });
+  
+  toast('Convidando membro...', 'loading');
+  
+  try {
+    const d = await jsonp(`${API}?action=addUser&nome=${encodeURIComponent(nome)}&email=${encodeURIComponent(email)}&senha=${encodeURIComponent(senha)}&group_id=${encodeURIComponent(group_id)}&permissions=${encodeURIComponent(permissions.join(','))}&accessible_households=${encodeURIComponent(accessible_hh.join(','))}&access_schedule=${encodeURIComponent(JSON.stringify(access_schedule))}&org_id=${encodeURIComponent(S.orgId)}&household_id=${encodeURIComponent(S.hhId)}&email_user=${encodeURIComponent(S.email)}&senha_user=${encodeURIComponent(S.senha)}`);
+    
+    if (d.error) {
+      toast(d.error, 'danger');
+      return;
+    }
+    
+    toast('✓ Membro convidado com sucesso', 'success');
+    closeNewUserModal();
+    loadUsersList();
+  } catch (err) {
+    console.log('Erro:', err);
+    toast('Erro ao convidar membro', 'danger');
+  }
+}
+
+async function loadUsersList() {
+  const container = $('usersList');
+  container.innerHTML = '<p style="color:var(--text-secondary);font-size:13px">Carregando...</p>';
+  
+  try {
+    const d = await jsonp(`${API}?action=getUsers&household_id=${encodeURIComponent(S.hhId)}&email=${encodeURIComponent(S.email)}&senha=${encodeURIComponent(S.senha)}`);
+    
+    if (d.error) {
+      container.innerHTML = `<p style="color:var(--danger);font-size:13px">${d.error}</p>`;
+      return;
+    }
+    
+    if (!d.users || d.users.length === 0) {
+      container.innerHTML = '<p style="color:var(--text-secondary);font-size:13px">Nenhum colaborador ainda</p>';
+      return;
+    }
+    
+    container.innerHTML = d.users.map(user => `
+      <div class="user-card">
+        <div class="user-card-info">
+          <div class="user-card-name">👤 ${user.nome}</div>
+          <div class="user-card-role">${user.role || 'Membro'}</div>
+        </div>
+        <div class="user-card-actions">
+          <button class="user-card-btn" onclick="editUser('${user.user_id}')">✏️ Editar</button>
+          <button class="user-card-btn" onclick="deleteUser('${user.user_id}')">🗑️</button>
+        </div>
+      </div>
+    `).join('');
+    
+  } catch (err) {
+    container.innerHTML = '<p style="color:var(--danger);font-size:13px">Erro ao carregar</p>';
+  }
+}
+
+function editUser(userId) {
+  toast('Edição em desenvolvimento', 'info');
+}
+
+async function deleteUser(userId) {
+  if (!confirm('Deseja deletar este colaborador?')) return;
+  
+  toast('Deletando...', 'loading');
+  try {
+    const d = await jsonp(`${API}?action=deleteUser&user_id=${encodeURIComponent(userId)}&email=${encodeURIComponent(S.email)}&senha=${encodeURIComponent(S.senha)}`);
+    
+    if (d.error) {
+      toast(d.error, 'danger');
+      return;
+    }
+    
+    toast('✓ Colaborador removido', 'success');
+    loadUsersList();
+  } catch (err) {
+    toast('Erro ao deletar', 'danger');
+  }
+}
+
+function loadGroupsList() {
+  toast('Grupos em desenvolvimento', 'info');
+}
+
+function openNewGroupModal() {
+  toast('Criar grupos em desenvolvimento', 'info');
+}
+
+function loadCategoriesList() {
+  toast('Categorias em desenvolvimento', 'info');
+}
+
+function openNewCategoryModal() {
+  toast('Criar categorias em desenvolvimento', 'info');
+}
+
+// ========== EVENTOS ==========
+$('settingsBtn').addEventListener('click', openSettings);
+
 initBulkEditUI();
 if (S.email && S.senha) {
   $('loginScreen').classList.add('hidden');
