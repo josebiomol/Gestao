@@ -1017,16 +1017,16 @@ function renderAccessScheduleTable() {
 
 async function saveNewUser() {
   const nome = $('newUserName').value.trim();
-  const email = $('newUserEmail').value.trim();
-  const senha = $('newUserPassword').value;
+  const novoEmail = $('newUserEmail').value.trim();
+  const novaSenha = $('newUserPassword').value;
   const group_id = $('newUserGroup').value || '';
   
-  if (!nome || !email || !senha) {
+  if (!nome || !novoEmail || !novaSenha) {
     toast('Preencha todos os campos', 'warning');
     return;
   }
   
-  if (senha.length < 6) {
+  if (novaSenha.length < 6) {
     toast('Senha deve ter mínimo 6 caracteres', 'warning');
     return;
   }
@@ -1058,26 +1058,33 @@ async function saveNewUser() {
   toast('Convidando membro...', 'loading');
   
   try {
-    console.log('Salvando usuário:', { nome, email, group_id, permissions, accessible_hh });
+    // Usar nomes diferentes para não confundir
+    const url = `${API}?action=addUser&nome=${encodeURIComponent(nome)}&email=${encodeURIComponent(novoEmail)}&senha=${encodeURIComponent(novaSenha)}&group_id=${encodeURIComponent(group_id)}&permissions=${encodeURIComponent(permissions.join(','))}&accessible_households=${encodeURIComponent(accessible_hh.join(','))}&access_schedule=${encodeURIComponent(JSON.stringify(access_schedule))}&household_id=${encodeURIComponent(S.hhId)}`;
     
-    const url = `${API}?action=addUser&nome=${encodeURIComponent(nome)}&email=${encodeURIComponent(email)}&senha=${encodeURIComponent(senha)}&group_id=${encodeURIComponent(group_id)}&permissions=${encodeURIComponent(permissions.join(','))}&accessible_households=${encodeURIComponent(accessible_hh.join(','))}&access_schedule=${encodeURIComponent(JSON.stringify(access_schedule))}&household_id=${encodeURIComponent(S.hhId)}&email=${encodeURIComponent(S.email)}&senha=${encodeURIComponent(S.senha)}`;
+    console.log('Chamando API com dados do novo usuário:');
+    console.log('Nome:', nome);
+    console.log('Email novo:', novoEmail);
+    console.log('Auth user:', S.email);
     
-    console.log('URL:', url.substring(0, 100) + '...');
+    // Passar email e senha de autenticação no jsonp
+    const fullUrl = `${url}&email_auth=${encodeURIComponent(S.email)}&senha_auth=${encodeURIComponent(S.senha)}`;
     
-    const d = await jsonp(url);
+    const d = await jsonp(fullUrl);
     
-    console.log('Resposta:', d);
+    console.log('Resposta do addUser:', d);
     
     if (d.error) {
       toast(d.error, 'danger');
       return;
     }
     
-    toast('✓ Membro convidado com sucesso', 'success');
-    closeNewUserModal();
-    loadUsersList();
+    if (d.success) {
+      toast('✓ Membro convidado com sucesso', 'success');
+      closeNewUserModal();
+      loadUsersList();
+    }
   } catch (err) {
-    console.log('Erro:', err);
+    console.error('Erro ao chamar API:', err);
     toast('Erro ao convidar membro', 'danger');
   }
 }
