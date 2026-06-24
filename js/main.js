@@ -1148,11 +1148,149 @@ async function deleteUser(userId) {
 }
 
 function loadGroupsList() {
-  toast('Grupos em desenvolvimento', 'info');
+  toast('Carregando grupos...', 'loading');
+  const container = $('groupsList');
+  container.innerHTML = '';
+  
+  loadGroupsData();
+}
+
+async function loadGroupsData() {
+  const container = $('groupsList');
+  
+  try {
+    const d = await jsonp(`${API}?action=getGroups&org_id=${encodeURIComponent(S.orgId)}&email=${encodeURIComponent(S.email)}&senha=${encodeURIComponent(S.senha)}`);
+    
+    console.log('Grupos carregados:', d);
+    
+    if (d.error) {
+      container.innerHTML = `<p style="color:var(--danger);font-size:13px">${d.error}</p>`;
+      return;
+    }
+    
+    if (!d.groups || d.groups.length === 0) {
+      container.innerHTML = '<p style="color:var(--text-secondary);font-size:13px">Nenhum grupo ainda</p>';
+      return;
+    }
+    
+    container.innerHTML = d.groups.map(group => {
+      const perms = (group.permissions || '').split(',').filter(p => p.trim());
+      return `
+        <div class="user-card">
+          <div class="user-card-info">
+            <div class="user-card-name">👤 ${group.nome}</div>
+            <div class="user-card-role">${perms.length} permissões</div>
+          </div>
+          <div class="user-card-actions">
+            <button class="user-card-btn" onclick="editGroup('${group.group_id}', '${group.nome}', '${(group.permissions || '').replace(/'/g, '&#39;')}')">✏️ Editar</button>
+            <button class="user-card-btn" onclick="deleteGroup('${group.group_id}')">🗑️</button>
+          </div>
+        </div>
+      `;
+    }).join('');
+    
+    toast('✓ Grupos carregados', 'success');
+  } catch (err) {
+    console.error('Erro ao carregar grupos:', err);
+    container.innerHTML = '<p style="color:var(--danger);font-size:13px">Erro ao carregar</p>';
+  }
 }
 
 function openNewGroupModal() {
-  toast('Criar grupos em desenvolvimento', 'info');
+  $('groupModalTitle').textContent = 'Novo Grupo';
+  $('groupSaveBtn').textContent = 'Salvar';
+  $('newGroupModal').classList.remove('hidden');
+  $('newGroupForm').reset();
+  document.getElementById('newGroupModal').dataset.groupId = '';
+}
+
+function closeNewGroupModal() {
+  $('newGroupModal').classList.add('hidden');
+  document.getElementById('newGroupForm').reset();
+}
+
+function editGroup(groupId, nome, permissions) {
+  $('groupModalTitle').textContent = 'Editar Grupo';
+  $('groupSaveBtn').textContent = 'Atualizar';
+  $('newGroupModal').classList.remove('hidden');
+  
+  $('newGroupName').value = nome;
+  document.getElementById('newGroupModal').dataset.groupId = groupId;
+  
+  // Desmarcar todos
+  document.querySelectorAll('.group-permission').forEach(cb => cb.checked = false);
+  
+  // Marcar as permissões do grupo
+  if (permissions) {
+    const perms = permissions.split(',').map(p => p.trim());
+    perms.forEach(perm => {
+      const checkbox = document.getElementById(`groupPerm-${perm}`);
+      if (checkbox) checkbox.checked = true;
+    });
+  }
+}
+
+async function saveNewGroup() {
+  const nome = $('newGroupName').value.trim();
+  const groupId = document.getElementById('newGroupModal').dataset.groupId;
+  
+  if (!nome) {
+    toast('Nome do grupo obrigatório', 'warning');
+    return;
+  }
+  
+  // Coletar permissões
+  const permissions = [];
+  document.querySelectorAll('.group-permission:checked').forEach(cb => {
+    const id = cb.id.replace('groupPerm-', '');
+    permissions.push(id);
+  });
+  
+  toast(groupId ? 'Atualizando...' : 'Salvando...', 'loading');
+  
+  try {
+    const action = groupId ? 'updateGroup' : 'addGroup';
+    const params = groupId ? `&group_id=${encodeURIComponent(groupId)}` : '';
+    
+    const d = await jsonp(`${API}?action=${action}&nome=${encodeURIComponent(nome)}&permissions=${encodeURIComponent(permissions.join(','))}&org_id=${encodeURIComponent(S.orgId)}${params}&email=${encodeURIComponent(S.email)}&senha=${encodeURIComponent(S.senha)}`);
+    
+    console.log('Resposta saveGroup:', d);
+    
+    if (d.error) {
+      toast(d.error, 'danger');
+      return;
+    }
+    
+    toast(groupId ? '✓ Grupo atualizado' : '✓ Grupo criado', 'success');
+    closeNewGroupModal();
+    loadGroupsData();
+  } catch (err) {
+    console.error('Erro:', err);
+    toast('Erro ao salvar grupo', 'danger');
+  }
+}
+
+async function deleteGroup(groupId) {
+  if (!confirm('Deseja deletar este grupo?')) return;
+  
+  toast('Deletando...', 'loading');
+  
+  try {
+    const d = await jsonp(`${API}?action=deleteGroup&group_id=${encodeURIComponent(groupId)}&org_id=${encodeURIComponent(S.orgId)}&email=${encodeURIComponent(S.email)}&senha=${encodeURIComponent(S.senha)}`);
+    
+    console.log('Resposta deleteGroup:', d);
+    
+    if (d.error) {
+      toast(d.error, 'danger');
+      return;
+    }
+    
+    toast('✓ Grupo removido', 'success');
+    loadGroupsData();
+  } catch (err) {
+    console.error('Erro:', err);
+    toast('Erro ao deletar grupo', 'danger');
+  }
 }
 
 function loadCategoriesList() {
