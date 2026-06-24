@@ -15,7 +15,8 @@ const S = {
   orgId: localStorage.getItem('orgId') || '',
   items: [],
   households: [],
-  permissions: []
+  permissions: [],
+  statusFilter: 'todos'
 };
 
 // ========== THEME ==========
@@ -299,7 +300,41 @@ function selectHousehold(hhId, nome) {
   toast(`Loja: ${nome}`, 'success');
 }
 
-// ========== ITEMS ==========
+// ========== FILTROS DE STATUS ==========
+function initStatusFilters() {
+  const container = document.getElementById('statusFilters');
+  if (!container) return;
+  
+  container.innerHTML = '';
+  
+  const statuses = [
+    { key: 'todos', label: 'Todos', count: 0 },
+    { key: 'pendente', label: 'Pendentes', count: 0 },
+    { key: 'sim', label: 'Comprados', count: 0 }
+  ];
+  
+  // Contar itens por status
+  statuses[0].count = S.items.length;
+  statuses[1].count = S.items.filter(i => i.status === 'pendente').length;
+  statuses[2].count = S.items.filter(i => i.status === 'sim').length;
+  
+  statuses.forEach(status => {
+    const btn = document.createElement('button');
+    btn.innerHTML = `${status.label} <strong>${status.count}</strong>`;
+    btn.className = 'status-filter-btn' + (S.statusFilter === status.key ? ' active' : '');
+    btn.dataset.status = status.key;
+    btn.onclick = () => setStatusFilter(status.key);
+    container.appendChild(btn);
+  });
+}
+
+function setStatusFilter(status) {
+  S.statusFilter = status;
+  initStatusFilters();
+  renderItems();
+}
+
+// ========== FIM FILTROS DE STATUS ==========
 async function loadItems() {
   try {
     const d = await jsonp(`${API}?action=getItems&household_id=${encodeURIComponent(S.hhId)}&email=${encodeURIComponent(S.email)}&senha=${encodeURIComponent(S.senha)}`);
@@ -318,14 +353,29 @@ function renderItems() {
   const content = $('content');
   if (!S.items.length) {
     content.innerHTML = '<div class="empty"><div class="empty-icon">📭</div><p class="empty-text">Nenhum item ainda</p></div>';
+    initStatusFilters();
     return;
   }
 
   const isSelectMode = document.querySelector('[data-select-mode]')?.getAttribute('data-select-mode') === 'true';
+  
+  // Filtrar itens por status
+  let filteredItems = S.items;
+  if (S.statusFilter === 'pendente') {
+    filteredItems = S.items.filter(i => i.status === 'pendente');
+  } else if (S.statusFilter === 'sim') {
+    filteredItems = S.items.filter(i => i.status === 'sim');
+  }
+
+  if (!filteredItems.length) {
+    content.innerHTML = '<div class="empty"><div class="empty-icon">📭</div><p class="empty-text">Nenhum item nessa categoria</p></div>';
+    initStatusFilters();
+    return;
+  }
 
   let html = '<ul class="items">';
   
-  S.items.forEach(item => {
+  filteredItems.forEach(item => {
     if (isSelectMode) {
       html += `
         <li class="item ${item.status === 'sim' ? 'checked' : ''}" style="display:flex;align-items:center;gap:8px">
@@ -356,6 +406,8 @@ function renderItems() {
   
   html += '</ul>';
   content.innerHTML = html;
+  
+  initStatusFilters();
 }
 
 function updateEditButton() {
