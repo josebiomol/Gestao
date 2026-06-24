@@ -287,10 +287,12 @@ function renderItems() {
     return;
   }
 
+  const isSelectMode = document.querySelector('[data-select-mode]')?.getAttribute('data-select-mode') === 'true';
+
   content.innerHTML = '<ul class="items">' + S.items.map(item => `
     <li class="item ${item.status === 'sim' ? 'checked' : ''}">
-      <input type="checkbox" class="item-select" data-id="${item.item_id}" style="width:20px;height:20px;cursor:pointer">
-      <div class="item-check" onclick="toggleItem('${item.item_id}')">
+      ${isSelectMode ? `<input type="checkbox" class="item-select" data-id="${item.item_id}" style="width:20px;height:20px;cursor:pointer;margin-right:8px;margin-left:4px">` : ''}
+      <div class="item-check" onclick="${isSelectMode ? '' : `toggleItem('${item.item_id}')`}" style="${isSelectMode ? 'display:none' : ''}">
         ${item.status === 'sim' ? '✓' : ''}
       </div>
       <div class="item-info">
@@ -298,12 +300,20 @@ function renderItems() {
         <p class="item-meta">${item.quantidade} ${item.unidade} • ${item.emoji || ''} ${item.categoria}</p>
       </div>
       <div class="item-actions">
-        <button class="item-action del" onclick="deleteItem('${item.item_id}')">🗑️</button>
+        <button class="item-action del" onclick="deleteItem('${item.item_id}')" style="${isSelectMode ? 'display:none' : ''}">🗑️</button>
       </div>
     </li>
   `).join('') + '</ul>';
   
-  updateEditButton();
+  // Adicionar botão "Mudar categoria" em modo seleção
+  if (isSelectMode) {
+    const btn = document.createElement('button');
+    btn.className = 'btn-p';
+    btn.textContent = 'Mudar categoria';
+    btn.style.cssText = 'margin-top:12px;width:100%';
+    btn.onclick = openBulkEditModal;
+    content.appendChild(btn);
+  }
 }
 
 function updateEditButton() {
@@ -466,6 +476,25 @@ async function deleteItem(itemId) {
 }
 
 // ========== BULK EDIT ==========
+async function toggleSelectMode() {
+  const mainView = $('mainView');
+  const isActive = mainView.getAttribute('data-select-mode') === 'true';
+  
+  if (isActive) {
+    // Desativar modo
+    mainView.setAttribute('data-select-mode', 'false');
+    const editBtn = document.querySelector('[data-edit-btn]');
+    if (editBtn) editBtn.innerHTML = '✎';
+    loadItems();
+  } else {
+    // Ativar modo
+    mainView.setAttribute('data-select-mode', 'true');
+    const editBtn = document.querySelector('[data-edit-btn]');
+    if (editBtn) editBtn.innerHTML = '✕';
+    loadItems();
+  }
+}
+
 async function openBulkEditModal() {
   const selected = document.querySelectorAll('.item-select:checked');
   if (selected.length === 0) {
@@ -473,13 +502,12 @@ async function openBulkEditModal() {
     return;
   }
   
-  // Carregar categorias para modal
   await loadBulkEditCategories();
-  $('bulkEditModal').classList.remove('hidden');
+  document.getElementById('bulkEditModal').classList.remove('hidden');
 }
 
 function closeBulkEditModal() {
-  $('bulkEditModal').classList.add('hidden');
+  document.getElementById('bulkEditModal').classList.add('hidden');
 }
 
 async function loadBulkEditCategories() {
@@ -601,10 +629,9 @@ function initBulkEditUI() {
     editBtn.type = 'button';
     editBtn.className = 'icon-btn';
     editBtn.innerHTML = '✎';
-    editBtn.title = 'Editar categorias';
-    editBtn.style.display = 'none';
+    editBtn.title = 'Modo seleção';
     editBtn.setAttribute('data-edit-btn', 'true');
-    editBtn.onclick = openBulkEditModal;
+    editBtn.onclick = toggleSelectMode;
     filterRow.appendChild(editBtn);
   }
 }
