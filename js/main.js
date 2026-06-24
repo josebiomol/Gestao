@@ -289,21 +289,39 @@ function renderItems() {
 
   const isSelectMode = document.querySelector('[data-select-mode]')?.getAttribute('data-select-mode') === 'true';
 
-  content.innerHTML = '<ul class="items">' + S.items.map(item => `
-    <li class="item ${item.status === 'sim' ? 'checked' : ''}">
-      ${isSelectMode ? `<input type="checkbox" class="item-select" data-id="${item.item_id}" style="width:20px;height:20px;cursor:pointer;margin-right:8px;margin-left:4px">` : ''}
-      <div class="item-check" onclick="${isSelectMode ? '' : `toggleItem('${item.item_id}')`}" style="${isSelectMode ? 'display:none' : ''}">
-        ${item.status === 'sim' ? '✓' : ''}
-      </div>
-      <div class="item-info">
-        <p class="item-name">${item.nome_item}</p>
-        <p class="item-meta">${item.quantidade} ${item.unidade} • ${item.emoji || ''} ${item.categoria}</p>
-      </div>
-      <div class="item-actions">
-        <button class="item-action del" onclick="deleteItem('${item.item_id}')" style="${isSelectMode ? 'display:none' : ''}">🗑️</button>
-      </div>
-    </li>
-  `).join('') + '</ul>';
+  let html = '<ul class="items">';
+  
+  S.items.forEach(item => {
+    if (isSelectMode) {
+      html += `
+        <li class="item">
+          <input type="checkbox" class="item-select" data-id="${item.item_id}" style="width:20px;height:20px;cursor:pointer;margin-right:8px">
+          <div class="item-info">
+            <p class="item-name">${item.nome_item}</p>
+            <p class="item-meta">${item.quantidade} ${item.unidade} • ${item.emoji || ''} ${item.categoria}</p>
+          </div>
+        </li>
+      `;
+    } else {
+      html += `
+        <li class="item ${item.status === 'sim' ? 'checked' : ''}">
+          <div class="item-check" onclick="toggleItem('${item.item_id}')">
+            ${item.status === 'sim' ? '✓' : ''}
+          </div>
+          <div class="item-info">
+            <p class="item-name">${item.nome_item}</p>
+            <p class="item-meta">${item.quantidade} ${item.unidade} • ${item.emoji || ''} ${item.categoria}</p>
+          </div>
+          <div class="item-actions">
+            <button class="item-action del" onclick="deleteItem('${item.item_id}')">🗑️</button>
+          </div>
+        </li>
+      `;
+    }
+  });
+  
+  html += '</ul>';
+  content.innerHTML = html;
   
   // Adicionar botão "Mudar categoria" em modo seleção
   if (isSelectMode) {
