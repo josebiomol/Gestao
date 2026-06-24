@@ -1301,6 +1301,7 @@ async function editUser(userId) {
     });
     
     renderAccessibleHouseholds();
+    renderAccessScheduleTable();
     
   } catch (err) {
     console.error('Erro:', err);
