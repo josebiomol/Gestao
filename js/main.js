@@ -1019,7 +1019,7 @@ async function saveNewUser() {
   const nome = $('newUserName').value.trim();
   const email = $('newUserEmail').value.trim();
   const senha = $('newUserPassword').value;
-  const group_id = $('newUserGroup').value;
+  const group_id = $('newUserGroup').value || '';
   
   if (!nome || !email || !senha) {
     toast('Preencha todos os campos', 'warning');
@@ -1058,7 +1058,15 @@ async function saveNewUser() {
   toast('Convidando membro...', 'loading');
   
   try {
-    const d = await jsonp(`${API}?action=addUser&nome=${encodeURIComponent(nome)}&email=${encodeURIComponent(email)}&senha=${encodeURIComponent(senha)}&group_id=${encodeURIComponent(group_id)}&permissions=${encodeURIComponent(permissions.join(','))}&accessible_households=${encodeURIComponent(accessible_hh.join(','))}&access_schedule=${encodeURIComponent(JSON.stringify(access_schedule))}&org_id=${encodeURIComponent(S.orgId)}&household_id=${encodeURIComponent(S.hhId)}&email_user=${encodeURIComponent(S.email)}&senha_user=${encodeURIComponent(S.senha)}`);
+    console.log('Salvando usuário:', { nome, email, group_id, permissions, accessible_hh });
+    
+    const url = `${API}?action=addUser&nome=${encodeURIComponent(nome)}&email=${encodeURIComponent(email)}&senha=${encodeURIComponent(senha)}&group_id=${encodeURIComponent(group_id)}&permissions=${encodeURIComponent(permissions.join(','))}&accessible_households=${encodeURIComponent(accessible_hh.join(','))}&access_schedule=${encodeURIComponent(JSON.stringify(access_schedule))}&household_id=${encodeURIComponent(S.hhId)}&email=${encodeURIComponent(S.email)}&senha=${encodeURIComponent(S.senha)}`;
+    
+    console.log('URL:', url.substring(0, 100) + '...');
+    
+    const d = await jsonp(url);
+    
+    console.log('Resposta:', d);
     
     if (d.error) {
       toast(d.error, 'danger');
