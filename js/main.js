@@ -270,7 +270,7 @@ $('logoutBtn').addEventListener('click', () => {
 // ========== HOUSEHOLDS ==========
 function showHouseholds() {
   // Resetar título para nome do sistema
-  $('app-title').textContent = 'Gestão';
+  $('appTitle').textContent = 'Gestão';
   
   $('householdsView').classList.remove('hidden');
   $('mainView').classList.add('hidden');
@@ -300,12 +300,13 @@ function selectHousehold(hhId, nome) {
   localStorage.setItem('hhId', S.hhId);
   
   // Atualizar título do app com nome da loja
-  $('app-title').textContent = nome;
+  $('appTitle').textContent = nome;
   
   $('hhBtn').textContent = nome;
   $('hhBtn').style.display = 'block';
   $('hhIcon').style.display = 'block';
   $('hhIcon').textContent = '🏪'; // Ícone de loja padrão
+  
   showMain();
   loadItems();
   toast(`Loja: ${nome}`, 'success');
