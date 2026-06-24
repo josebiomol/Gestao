@@ -99,6 +99,8 @@
   .tab.active .tab-count{background:var(--green);color:#fff}
   .group-toggle{background:none;border:1px solid var(--border);color:var(--text-soft);padding:8px 10px;border-radius:10px;font-size:12px;white-space:nowrap;order:2}
   .group-toggle.active{background:var(--green-bg);color:var(--green);border-color:transparent}
+  .status-filters button{padding:6px 10px;border:1px solid var(--border);background:transparent;color:var(--text-soft);border-radius:8px;cursor:pointer;font-size:12px;white-space:nowrap;transition:all 0.2s}
+  .status-filters button.active{background:var(--green);color:#fff;border-color:var(--green)}
   /* Items */
   .sec-label{font-size:11px;font-weight:700;color:var(--text-soft);margin:16px 0 6px;text-transform:uppercase;letter-spacing:.4px;display:flex;align-items:center;gap:6px}
   ul.items{list-style:none;margin:0 0 8px;padding:0;display:flex;flex-direction:column;gap:6px}
@@ -227,7 +229,7 @@
     <!-- Main App Screen -->
     <div id="mainView" class="main hidden">
       <div class="filter-row">
-        <div class="tabs" id="tabs"></div>
+        <div class="status-filters" id="statusFilters" style="display:flex;gap:6px;align-items:center"></div>
         <button class="group-toggle" id="groupToggle">Agrupar</button>
         <button class="icon-btn" id="addBtn" onclick="openAddItem()" title="Adicionar item" style="width:34px;height:34px;font-size:16px">➕</button>
         <div class="search-wrap">
