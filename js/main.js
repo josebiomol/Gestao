@@ -1150,7 +1150,7 @@ async function saveNewUser() {
       // EDITAR usuário - senha opcional
       action = 'updateUser';
       const senhaParam = novaSenha ? `&senha_nova=${encodeURIComponent(novaSenha)}` : '';
-      url = `${API}?action=${action}&user_id=${encodeURIComponent(editUserId)}&nome=${encodeURIComponent(nome)}&email=${encodeURIComponent(novoEmail)}${senhaParam}&group_id=${encodeURIComponent(group_id)}&permissions=${encodeURIComponent(permissions.join(','))}&accessible_households=${encodeURIComponent(accessible_hh.join(','))}&access_schedule=${encodeURIComponent(JSON.stringify(access_schedule))}&email_auth=${encodeURIComponent(S.email)}&senha_auth=${encodeURIComponent(S.senha)}`;
+      url = `${API}?action=${action}&user_id=${encodeURIComponent(editUserId)}&nome=${encodeURIComponent(nome)}&email_novo=${encodeURIComponent(novoEmail)}&role=membro${senhaParam}&group_id=${encodeURIComponent(group_id)}&permissions=${encodeURIComponent(permissions.join(','))}&accessible_households=${encodeURIComponent(accessible_hh.join(','))}&access_schedule=${encodeURIComponent(JSON.stringify(access_schedule))}&email_auth=${encodeURIComponent(S.email)}&senha_auth=${encodeURIComponent(S.senha)}`;
       console.log('DEBUG updateUser URL:', url);
     } else {
       // NOVO usuário - senha obrigatória
