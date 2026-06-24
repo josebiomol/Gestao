@@ -961,6 +961,10 @@ function openNewUserModal() {
 function closeNewUserModal() {
   $('newUserModal').classList.add('hidden');
   document.getElementById('newUserForm').reset();
+  $('newUserModal').dataset.editUserId = '';
+  // Resetar title para "Convidar membro"
+  const titleEl = document.querySelector('#newUserModal .modal-title');
+  if (titleEl) titleEl.textContent = 'Convidar membro';
 }
 
 function loadGroupsForSelect() {
@@ -1020,13 +1024,22 @@ async function saveNewUser() {
   const novoEmail = $('newUserEmail').value.trim();
   const novaSenha = $('newUserPassword').value;
   const group_id = $('newUserGroup').value || '';
+  const editUserId = $('newUserModal').dataset.editUserId || '';
   
-  if (!nome || !novoEmail || !novaSenha) {
-    toast('Preencha todos os campos', 'warning');
+  // Validações
+  if (!nome || !novoEmail) {
+    toast('Nome e email são obrigatórios', 'warning');
     return;
   }
   
-  if (novaSenha.length < 6) {
+  // Se é novo usuário, senha é obrigatória
+  if (!editUserId && !novaSenha) {
+    toast('Senha é obrigatória para novo usuário', 'warning');
+    return;
+  }
+  
+  // Se há senha, validar mínimo de 6 caracteres
+  if (novaSenha && novaSenha.length < 6) {
     toast('Senha deve ter mínimo 6 caracteres', 'warning');
     return;
   }
@@ -1055,23 +1068,23 @@ async function saveNewUser() {
     };
   });
   
-  toast('Convidando membro...', 'loading');
+  toast(editUserId ? 'Atualizando membro...' : 'Convidando membro...', 'loading');
   
   try {
-    // Usar nomes diferentes para não confundir
-    const url = `${API}?action=addUser&nome=${encodeURIComponent(nome)}&email=${encodeURIComponent(novoEmail)}&senha=${encodeURIComponent(novaSenha)}&group_id=${encodeURIComponent(group_id)}&permissions=${encodeURIComponent(permissions.join(','))}&accessible_households=${encodeURIComponent(accessible_hh.join(','))}&access_schedule=${encodeURIComponent(JSON.stringify(access_schedule))}&household_id=${encodeURIComponent(S.hhId)}`;
+    let action, url;
     
-    console.log('Chamando API com dados do novo usuário:');
-    console.log('Nome:', nome);
-    console.log('Email novo:', novoEmail);
-    console.log('Auth user:', S.email);
+    if (editUserId) {
+      // EDITAR usuário - senha opcional
+      action = 'updateUser';
+      const senhaParam = novaSenha ? `&senha=${encodeURIComponent(novaSenha)}` : '';
+      url = `${API}?action=${action}&user_id=${encodeURIComponent(editUserId)}&nome=${encodeURIComponent(nome)}&email=${encodeURIComponent(novoEmail)}${senhaParam}&group_id=${encodeURIComponent(group_id)}&permissions=${encodeURIComponent(permissions.join(','))}&accessible_households=${encodeURIComponent(accessible_hh.join(','))}&access_schedule=${encodeURIComponent(JSON.stringify(access_schedule))}&email_auth=${encodeURIComponent(S.email)}&senha_auth=${encodeURIComponent(S.senha)}`;
+    } else {
+      // NOVO usuário - senha obrigatória
+      action = 'addUser';
+      url = `${API}?action=${action}&nome=${encodeURIComponent(nome)}&email=${encodeURIComponent(novoEmail)}&senha=${encodeURIComponent(novaSenha)}&group_id=${encodeURIComponent(group_id)}&permissions=${encodeURIComponent(permissions.join(','))}&accessible_households=${encodeURIComponent(accessible_hh.join(','))}&access_schedule=${encodeURIComponent(JSON.stringify(access_schedule))}&household_id=${encodeURIComponent(S.hhId)}&email_auth=${encodeURIComponent(S.email)}&senha_auth=${encodeURIComponent(S.senha)}`;
+    }
     
-    // Passar email e senha de autenticação no jsonp
-    const fullUrl = `${url}&email_auth=${encodeURIComponent(S.email)}&senha_auth=${encodeURIComponent(S.senha)}`;
-    
-    const d = await jsonp(fullUrl);
-    
-    console.log('Resposta do addUser:', d);
+    const d = await jsonp(url);
     
     if (d.error) {
       toast(d.error, 'danger');
@@ -1079,13 +1092,13 @@ async function saveNewUser() {
     }
     
     if (d.success) {
-      toast('✓ Membro convidado com sucesso', 'success');
+      toast(`✓ Membro ${editUserId ? 'atualizado' : 'convidado'} com sucesso`, 'success');
       closeNewUserModal();
       loadUsersList();
     }
   } catch (err) {
     console.error('Erro ao chamar API:', err);
-    toast('Erro ao convidar membro', 'danger');
+    toast(`Erro ao ${editUserId ? 'atualizar' : 'convidar'} membro`, 'danger');
   }
 }
 
@@ -1124,8 +1137,77 @@ async function loadUsersList() {
   }
 }
 
-function editUser(userId) {
-  toast('Edição em desenvolvimento', 'info');
+async function editUser(userId) {
+  try {
+    // Buscar dados do usuário
+    const d = await jsonp(`${API}?action=getUserById&user_id=${encodeURIComponent(userId)}&email=${encodeURIComponent(S.email)}&senha=${encodeURIComponent(S.senha)}`);
+    
+    if (d.error) {
+      toast(d.error, 'danger');
+      return;
+    }
+    
+    const user = d.user;
+    
+    // Abrir modal com dados
+    $('newUserModal').classList.remove('hidden');
+    $('newUserModal').dataset.editUserId = userId;
+    
+    // Atualizar título
+    const titleEl = document.querySelector('#newUserModal .modal-title');
+    if (titleEl) titleEl.textContent = 'Editar Colaborador';
+    
+    // Preencher campos
+    $('newUserName').value = user.nome || '';
+    $('newUserEmail').value = user.email || '';
+    $('newUserPassword').value = ''; // Deixar vazio - senha opcional
+    $('newUserGroup').value = user.group_id || '';
+    
+    // Desmarcar e marcar permissões
+    document.querySelectorAll('.user-permission').forEach(cb => {
+      const perm = cb.id.replace('perm-', '');
+      cb.checked = (user.permissions || '').includes(perm);
+    });
+    
+    // Lojas acessíveis
+    const accessibleList = (user.accessible_households || '').split(',').map(h => h.trim()).filter(h => h);
+    document.querySelectorAll('input[name="accessible_hh"]').forEach(cb => {
+      cb.checked = accessibleList.includes(String(cb.value)) || cb.value === String(user.household_id);
+    });
+    
+    // Horários
+    let schedule = {};
+    try {
+      schedule = JSON.parse(user.access_schedule || '{}');
+    } catch (e) {}
+    
+    const dias = ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado'];
+    dias.forEach(dia => {
+      const checkbox = document.querySelector(`input[data-dia="${dia.charAt(0).toUpperCase() + dia.slice(1)}"]`);
+      const startInput = document.querySelector(`input[data-dia="${dia.charAt(0).toUpperCase() + dia.slice(1)}"][data-type="start"]`);
+      const endInput = document.querySelector(`input[data-dia="${dia.charAt(0).toUpperCase() + dia.slice(1)}"][data-type="end"]`);
+      
+      if (checkbox && startInput && endInput) {
+        if (schedule[dia]) {
+          checkbox.checked = schedule[dia].enabled;
+          if (schedule[dia].start) startInput.value = schedule[dia].start;
+          if (schedule[dia].end) endInput.value = schedule[dia].end;
+          startInput.disabled = !schedule[dia].enabled;
+          endInput.disabled = !schedule[dia].enabled;
+        } else {
+          checkbox.checked = false;
+          startInput.disabled = true;
+          endInput.disabled = true;
+        }
+      }
+    });
+    
+    renderAccessibleHouseholds();
+    
+  } catch (err) {
+    console.error('Erro:', err);
+    toast('Erro ao carregar dados do usuário', 'danger');
+  }
 }
 
 async function deleteUser(userId) {
