@@ -288,6 +288,21 @@ function showHouseholds() {
   renderHouseholds();
 }
 
+async function loadAndShowHouseholds() {
+  // Recarregar lojas da API antes de mostrar
+  try {
+    const d = await jsonp(`${API}?action=getHouseholds&email=${encodeURIComponent(S.email)}&senha=${encodeURIComponent(S.senha)}`);
+    if (d && d.households) {
+      S.households = d.households;
+      console.log('Lojas recarregadas:', S.households);
+    }
+  } catch (err) {
+    console.log('Erro ao recarregar lojas:', err);
+  }
+  
+  showHouseholds();
+}
+
 function showMain() {
   $('householdsView').classList.add('hidden');
   $('mainView').classList.remove('hidden');
