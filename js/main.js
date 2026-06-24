@@ -302,11 +302,6 @@ function selectHousehold(hhId, nome) {
   // Atualizar título do app com nome da loja
   $('appTitle').textContent = nome;
   
-  $('hhBtn').textContent = nome;
-  $('hhBtn').style.display = 'block';
-  $('hhIcon').style.display = 'block';
-  $('hhIcon').textContent = '🏪'; // Ícone de loja padrão
-  
   showMain();
   loadItems();
   toast(`Loja: ${nome}`, 'success');
