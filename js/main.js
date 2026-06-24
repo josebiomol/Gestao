@@ -316,26 +316,11 @@ function closeAddItem() {
 $('addItemForm').addEventListener('submit', async (e) => {
   e.preventDefault();
 
-  // ========== SEGURANÇA V3.0 ==========
+  // ========== SEGURANÇA V3.0 (LEVE) ==========
   if (appSecurity) {
     const limitCheck = appSecurity.rateLimiter.check(S.email, 'add_item');
     if (!limitCheck.allowed) {
       toast(limitCheck.reason, 'danger');
-      return;
-    }
-
-    if (!appSecurity.permissionManager.can('add_item')) {
-      toast('Sem permissão', 'danger');
-      return;
-    }
-
-    if (!appSecurity.permissionManager.isSubscriptionActive()) {
-      toast('Assinatura inativa', 'danger');
-      return;
-    }
-
-    if (!appSecurity.permissionManager.hasModuleAccess('estoque')) {
-      toast('Sem acesso ao módulo Estoque', 'danger');
       return;
     }
   }
