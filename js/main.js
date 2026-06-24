@@ -526,12 +526,17 @@ async function openBulkEditModal() {
     return;
   }
   
+  // SALVAR os IDs selecionados
+  window.selectedItemIds = Array.from(selected).map(cb => cb.dataset.id);
+  console.log('Itens selecionados salvos:', window.selectedItemIds);
+  
   await loadBulkEditCategories();
   document.getElementById('bulkEditModal').classList.remove('hidden');
 }
 
 function closeBulkEditModal() {
   document.getElementById('bulkEditModal').classList.add('hidden');
+  window.selectedItemIds = [];
 }
 
 async function loadBulkEditCategories() {
@@ -619,17 +624,23 @@ function selectBulkCategory(btn) {
 }
 
 async function applyBulkEdit() {
-  const selected = Array.from(document.querySelectorAll('.item-select:checked')).map(cb => cb.dataset.id);
+  // Usar IDs salvos quando o modal foi aberto
+  const selected = window.selectedItemIds || [];
+  
+  console.log('Aplicando bulk edit com itens:', selected);
+  
   if (selected.length === 0) {
-    toast('Selecione itens', 'warning');
+    toast('Selecione itens primeiro', 'warning');
     return;
   }
   
-  // Procurar botão com cor verde (selecionado) - CORRETO: .bulk-cat-container
+  // Procurar botão com cor verde (selecionado)
   const selectedBtn = Array.from(document.querySelectorAll('.bulk-cat-container button')).find(btn => {
     const style = btn.getAttribute('style');
     return style && style.includes('16A34A');
   });
+  
+  console.log('Botão categoria encontrado:', selectedBtn);
   
   if (!selectedBtn) {
     toast('Selecione uma categoria', 'warning');
