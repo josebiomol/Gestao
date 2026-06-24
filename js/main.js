@@ -305,12 +305,31 @@ function renderItems() {
 
 // ========== ADD ITEM ==========
 function openAddItem() {
+  loadCategories();
   $('addItemModal').classList.remove('hidden');
 }
 
 function closeAddItem() {
   $('addItemModal').classList.add('hidden');
   $('addItemForm').reset();
+}
+
+async function loadCategories() {
+  try {
+    const d = await jsonp(`${API}?action=getCategories&org_id=${encodeURIComponent(S.orgId)}&email=${encodeURIComponent(S.email)}&senha=${encodeURIComponent(S.senha)}`);
+    if (d.error || !d.categories) return;
+    
+    const catSelect = $('itemCat');
+    catSelect.innerHTML = '<option value="">Geral</option>';
+    d.categories.forEach(cat => {
+      const opt = document.createElement('option');
+      opt.value = cat.nome || cat.category_id;
+      opt.textContent = cat.nome;
+      catSelect.appendChild(opt);
+    });
+  } catch (err) {
+    console.log('Erro ao carregar categorias');
+  }
 }
 
 $('addItemForm').addEventListener('submit', async (e) => {
