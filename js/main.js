@@ -1211,7 +1211,7 @@ async function loadUsersList() {
 async function editUser(userId) {
   try {
     // Buscar dados do usuário
-    const d = await jsonp(`${API}?action=getUserById&user_id=${encodeURIComponent(userId)}&email=${encodeURIComponent(S.email)}&senha=${encodeURIComponent(S.senha)}`);
+    const d = await jsonp(`${API}?action=getUserById&user_id=${encodeURIComponent(userId)}&email_auth=${encodeURIComponent(S.email)}&senha_auth=${encodeURIComponent(S.senha)}`);
     
     if (d.error) {
       toast(d.error, 'danger');
