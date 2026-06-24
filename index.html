@@ -130,13 +130,15 @@
   .modal{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;z-index:50;animation:slideUp .3s ease-out}
   @keyframes slideUp{from{opacity:0;transform:scale(0.9)}to{opacity:1;transform:scale(1)}}
   .modal.hidden{display:none}
-  .modal-content{background:var(--card);width:90%;max-width:550px;border-radius:14px;padding:20px;max-height:85vh;overflow-y:auto;box-shadow:var(--shadow)}
+  .modal-content{background:var(--card);width:90%;max-width:550px;border-radius:14px;padding:16px;max-height:85vh;overflow-y:auto;box-shadow:var(--shadow)}
   .modal-title{font-family:'Archivo',sans-serif;font-size:18px;font-weight:800;margin:0 0 12px}
   .modal-close{position:absolute;top:12px;right:12px;background:none;border:none;color:var(--text-soft);font-size:18px;cursor:pointer}
   .modal-close:hover{color:var(--text)}
-  .modal-form{display:grid;grid-template-columns:2fr 1fr 1fr;gap:12px}
-  .modal-form .form-group:nth-child(4){grid-column:span 3}
-  .modal-form .form-group:nth-child(4) > div{display:flex;gap:8px;flex-wrap:wrap}
+  .modal-form{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .modal-form .form-group:nth-child(1){grid-column:1 / -1}
+  .modal-form .form-group:nth-child(4){grid-column:1 / -1}
+  .modal-form .form-group:nth-child(4) > div{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-start}
+  .modal-form .form-group:nth-child(4) > div button{flex:0 1 calc(33.333% - 5px);font-size:12px;padding:6px 8px}
   .form-group{display:flex;flex-direction:column;gap:4px}
   .form-group label{font-size:12px;font-weight:600;color:var(--text-soft);text-transform:uppercase;letter-spacing:.3px}
   .form-group input,.form-group select,.form-group textarea{padding:11px 14px;border:1px solid var(--border);border-radius:10px;background:var(--card);color:var(--text);font-family:'Inter',sans-serif;font-size:14px}
