@@ -1246,7 +1246,14 @@ async function editUser(userId) {
     });
     
     // Lojas acessíveis
-    const accessibleList = (user.accessible_households || '').split(',').map(h => h.trim()).filter(h => h);
+    let accessibleList = [];
+    if (user.accessible_households) {
+      if (typeof user.accessible_households === 'string') {
+        accessibleList = user.accessible_households.split(',').map(h => h.trim()).filter(h => h);
+      } else if (Array.isArray(user.accessible_households)) {
+        accessibleList = user.accessible_households;
+      }
+    }
     document.querySelectorAll('input[name="accessible_hh"]').forEach(cb => {
       cb.checked = accessibleList.includes(String(cb.value)) || cb.value === String(user.household_id);
     });
