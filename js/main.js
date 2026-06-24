@@ -294,7 +294,7 @@ function renderItems() {
       </div>
       <div class="item-info">
         <p class="item-name">${item.nome_item}</p>
-        <p class="item-meta">${item.quantidade} ${item.unidade} • ${item.categoria}</p>
+        <p class="item-meta">${item.quantidade} ${item.unidade} • ${item.emoji || ''} ${item.categoria}</p>
       </div>
       <div class="item-actions">
         <button class="item-action del" onclick="deleteItem('${item.item_id}')">🗑️</button>
@@ -319,17 +319,54 @@ async function loadCategories() {
     const d = await jsonp(`${API}?action=getCategories&org_id=${encodeURIComponent(S.orgId)}&email=${encodeURIComponent(S.email)}&senha=${encodeURIComponent(S.senha)}`);
     if (d.error || !d.categories) return;
     
-    const catSelect = $('itemCat');
-    catSelect.innerHTML = '<option value="">Geral</option>';
+    const catDiv = document.createElement('div');
+    catDiv.style.cssText = 'display:flex;gap:8px;flex-wrap:wrap;margin-top:8px';
+    
+    const generalBtn = document.createElement('button');
+    generalBtn.textContent = 'Geral';
+    generalBtn.type = 'button';
+    generalBtn.style.cssText = 'padding:8px 12px;border:2px solid #E7E8E6;background:white;border-radius:8px;cursor:pointer;font-size:13px';
+    generalBtn.dataset.cat = '';
+    generalBtn.dataset.emoji = '';
+    generalBtn.onclick = () => selectCategory(generalBtn);
+    catDiv.appendChild(generalBtn);
+    
     d.categories.forEach(cat => {
-      const opt = document.createElement('option');
-      opt.value = cat.nome || cat.category_id;
-      opt.textContent = cat.nome;
-      catSelect.appendChild(opt);
+      const btn = document.createElement('button');
+      btn.innerHTML = `${cat.emoji || ''} ${cat.nome}`;
+      btn.type = 'button';
+      btn.style.cssText = 'padding:8px 12px;border:2px solid #E7E8E6;background:white;border-radius:8px;cursor:pointer;font-size:13px;display:flex;align-items:center;gap:4px';
+      btn.dataset.cat = cat.nome;
+      btn.dataset.emoji = cat.emoji || '';
+      btn.onclick = () => selectCategory(btn);
+      catDiv.appendChild(btn);
     });
+    
+    const oldSelect = $('itemCat').parentElement;
+    oldSelect.replaceChild(catDiv, $('itemCat'));
+    
+    // Selecionar Geral por padrão
+    generalBtn.style.borderColor = '#16A34A';
+    generalBtn.style.color = '#16A34A';
+    generalBtn.dataset.selected = 'true';
   } catch (err) {
     console.log('Erro ao carregar categorias');
   }
+}
+
+function selectCategory(btn) {
+  // Limpar anterior
+  const btns = btn.parentElement.querySelectorAll('button');
+  btns.forEach(b => {
+    b.style.borderColor = '#E7E8E6';
+    b.style.color = 'inherit';
+    b.dataset.selected = 'false';
+  });
+  
+  // Selecionar novo
+  btn.style.borderColor = '#16A34A';
+  btn.style.color = '#16A34A';
+  btn.dataset.selected = 'true';
 }
 
 $('addItemForm').addEventListener('submit', async (e) => {
@@ -348,7 +385,10 @@ $('addItemForm').addEventListener('submit', async (e) => {
   const nome = $('itemNome').value.trim();
   const qty = $('itemQtd').value || '1';
   const unit = $('itemUnit').value || 'un';
-  const cat = $('itemCat').value || 'geral';
+  
+  // Pegar categoria do botão selecionado
+  const selectedBtn = document.querySelector('button[data-selected="true"]');
+  const cat = selectedBtn ? selectedBtn.dataset.cat : 'geral';
 
   if (!nome) {
     toast('Nome obrigatório', 'danger');
