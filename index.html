@@ -419,39 +419,39 @@
         <label style="display:block;font-size:12px;color:var(--text-secondary);margin-bottom:8px;text-transform:uppercase;font-weight:600">Permissões</label>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
           <label style="display:flex;align-items:center;gap:8px;padding:8px;border:1px solid var(--border);border-radius:6px;cursor:pointer">
-            <input type="checkbox" id="perm-add-item" class="user-permission">
+            <input type="checkbox" id="perm-add_item" class="user-permission">
             <span style="font-size:13px">Adicionar item</span>
           </label>
           <label style="display:flex;align-items:center;gap:8px;padding:8px;border:1px solid var(--border);border-radius:6px;cursor:pointer">
-            <input type="checkbox" id="perm-mark-bought" class="user-permission">
+            <input type="checkbox" id="perm-toggle_item" class="user-permission">
             <span style="font-size:13px">Marcar como comprado</span>
           </label>
           <label style="display:flex;align-items:center;gap:8px;padding:8px;border:1px solid var(--border);border-radius:6px;cursor:pointer">
-            <input type="checkbox" id="perm-delete-item" class="user-permission">
+            <input type="checkbox" id="perm-delete_item" class="user-permission">
             <span style="font-size:13px">Excluir item</span>
           </label>
           <label style="display:flex;align-items:center;gap:8px;padding:8px;border:1px solid var(--border);border-radius:6px;cursor:pointer">
-            <input type="checkbox" id="perm-view-users" class="user-permission">
+            <input type="checkbox" id="perm-view_members" class="user-permission">
             <span style="font-size:13px">Ver membros</span>
           </label>
           <label style="display:flex;align-items:center;gap:8px;padding:8px;border:1px solid var(--border);border-radius:6px;cursor:pointer">
-            <input type="checkbox" id="perm-invite-user" class="user-permission">
+            <input type="checkbox" id="perm-invite_member" class="user-permission">
             <span style="font-size:13px">Convidar membro</span>
           </label>
           <label style="display:flex;align-items:center;gap:8px;padding:8px;border:1px solid var(--border);border-radius:6px;cursor:pointer">
-            <input type="checkbox" id="perm-delete-user" class="user-permission">
+            <input type="checkbox" id="perm-delete_member" class="user-permission">
             <span style="font-size:13px">Excluir membro</span>
           </label>
           <label style="display:flex;align-items:center;gap:8px;padding:8px;border:1px solid var(--border);border-radius:6px;cursor:pointer">
-            <input type="checkbox" id="perm-edit-user" class="user-permission">
+            <input type="checkbox" id="perm-edit_member" class="user-permission">
             <span style="font-size:13px">Editar membro</span>
           </label>
           <label style="display:flex;align-items:center;gap:8px;padding:8px;border:1px solid var(--border);border-radius:6px;cursor:pointer">
-            <input type="checkbox" id="perm-view-all-lojas" class="user-permission">
+            <input type="checkbox" id="perm-view_all_lojas" class="user-permission">
             <span style="font-size:13px">Ver todas as lojas</span>
           </label>
           <label style="display:flex;align-items:center;gap:8px;padding:8px;border:1px solid var(--border);border-radius:6px;cursor:pointer">
-            <input type="checkbox" id="perm-manage-lojas" class="user-permission">
+            <input type="checkbox" id="perm-manage_lojas" class="user-permission">
             <span style="font-size:13px">Gerenciar lojas</span>
           </label>
         </div>
@@ -471,7 +471,7 @@
     </form>
     
     <div style="padding:16px;border-top:1px solid var(--border);display:flex;gap:8px">
-      <button type="button" class="btn-primary" onclick="saveNewUser()" style="flex:1">Convidar membro</button>
+      <button type="button" class="btn-primary" id="userModalSaveBtn" onclick="saveNewUser()" style="flex:1">Convidar membro</button>
       <button type="button" onclick="closeNewUserModal()" style="flex:1;padding:10px;border:1px solid var(--border);border-radius:6px;background:transparent;color:var(--text);cursor:pointer">Cancelar</button>
     </div>
   </div>
