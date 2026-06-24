@@ -289,6 +289,7 @@ function renderItems() {
 
   content.innerHTML = '<ul class="items">' + S.items.map(item => `
     <li class="item ${item.status === 'sim' ? 'checked' : ''}">
+      <input type="checkbox" class="item-select" data-id="${item.item_id}" style="width:20px;height:20px;cursor:pointer">
       <div class="item-check" onclick="toggleItem('${item.item_id}')">
         ${item.status === 'sim' ? '✓' : ''}
       </div>
@@ -301,6 +302,16 @@ function renderItems() {
       </div>
     </li>
   `).join('') + '</ul>';
+  
+  updateEditButton();
+}
+
+function updateEditButton() {
+  const selected = document.querySelectorAll('.item-select:checked').length;
+  const editBtn = document.querySelector('[data-edit-btn]');
+  if (editBtn) {
+    editBtn.style.display = selected > 0 ? 'block' : 'none';
+  }
 }
 
 // ========== ADD ITEM ==========
@@ -454,9 +465,102 @@ async function deleteItem(itemId) {
   }
 }
 
-// ========== MODAL CONTROLS ==========
-function closeSettings() {
-  $('settingsModal').classList.add('hidden');
+// ========== BULK EDIT ==========
+async function openBulkEditModal() {
+  const selected = document.querySelectorAll('.item-select:checked');
+  if (selected.length === 0) {
+    toast('Selecione itens', 'warning');
+    return;
+  }
+  
+  // Carregar categorias para modal
+  await loadBulkEditCategories();
+  $('bulkEditModal').classList.remove('hidden');
+}
+
+function closeBulkEditModal() {
+  $('bulkEditModal').classList.add('hidden');
+}
+
+async function loadBulkEditCategories() {
+  try {
+    const d = await jsonp(`${API}?action=getCategories&org_id=${encodeURIComponent(S.orgId)}&email=${encodeURIComponent(S.email)}&senha=${encodeURIComponent(S.senha)}`);
+    if (d.error || !d.categories) return;
+    
+    const catDiv = document.getElementById('bulkEditCats') || document.createElement('div');
+    catDiv.id = 'bulkEditCats';
+    catDiv.style.cssText = 'display:flex;gap:8px;flex-wrap:wrap;margin:12px 0';
+    catDiv.innerHTML = '';
+    
+    const generalBtn = document.createElement('button');
+    generalBtn.textContent = 'Geral';
+    generalBtn.type = 'button';
+    generalBtn.style.cssText = 'padding:8px 12px;border:2px solid #E7E8E6;background:white;border-radius:8px;cursor:pointer;font-size:13px';
+    generalBtn.dataset.cat = '';
+    generalBtn.onclick = () => selectBulkCategory(generalBtn);
+    catDiv.appendChild(generalBtn);
+    
+    d.categories.forEach(cat => {
+      const btn = document.createElement('button');
+      btn.innerHTML = `${cat.emoji || ''} ${cat.nome}`;
+      btn.type = 'button';
+      btn.style.cssText = 'padding:8px 12px;border:2px solid #E7E8E6;background:white;border-radius:8px;cursor:pointer;font-size:13px;display:flex;align-items:center;gap:4px';
+      btn.dataset.cat = cat.nome;
+      btn.onclick = () => selectBulkCategory(btn);
+      catDiv.appendChild(btn);
+    });
+    
+    let bulkModal = document.getElementById('bulkEditModal');
+    if (bulkModal) {
+      const catContainer = bulkModal.querySelector('.bulk-cat-container');
+      if (catContainer) catContainer.innerHTML = catDiv.innerHTML;
+    }
+  } catch (err) {
+    console.log('Erro ao carregar categorias');
+  }
+}
+
+function selectBulkCategory(btn) {
+  const btns = btn.parentElement.querySelectorAll('button');
+  btns.forEach(b => {
+    b.style.borderColor = '#E7E8E6';
+    b.style.color = 'inherit';
+  });
+  btn.style.borderColor = '#16A34A';
+  btn.style.color = '#16A34A';
+}
+
+async function applyBulkEdit() {
+  const selected = Array.from(document.querySelectorAll('.item-select:checked')).map(cb => cb.dataset.id);
+  if (selected.length === 0) {
+    toast('Selecione itens', 'warning');
+    return;
+  }
+  
+  const selectedBtn = document.querySelector('#bulkEditModal button[style*="16A34A"]');
+  const newCategory = selectedBtn ? selectedBtn.dataset.cat : '';
+  
+  if (!newCategory) {
+    toast('Selecione categoria', 'warning');
+    return;
+  }
+  
+  toast('Atualizando...', 'loading');
+  
+  try {
+    const d = await jsonp(`${API}?action=updateItemsCategory&item_ids=${encodeURIComponent(JSON.stringify(selected))}&categoria=${encodeURIComponent(newCategory)}&household_id=${encodeURIComponent(S.hhId)}&email=${encodeURIComponent(S.email)}&senha=${encodeURIComponent(S.senha)}`);
+    
+    if (d.error) {
+      toast(d.error, 'danger');
+      return;
+    }
+    
+    closeBulkEditModal();
+    loadItems();
+    toast('✓ Categorias atualizadas', 'success');
+  } catch (err) {
+    toast('Erro ao atualizar', 'danger');
+  }
 }
 
 $('settingsBtn').addEventListener('click', () => {
@@ -469,7 +573,44 @@ $('avBtn').addEventListener('click', () => {
   $('accMenu').classList.toggle('hidden');
 });
 
-// ========== INIT ==========
+function initBulkEditUI() {
+  // Criar modal se não existir
+  if (!document.getElementById('bulkEditModal')) {
+    const modal = document.createElement('div');
+    modal.id = 'bulkEditModal';
+    modal.className = 'modal hidden';
+    modal.innerHTML = `
+      <div class="modal-content">
+        <button class="modal-close" onclick="closeBulkEditModal()">✕</button>
+        <h2 class="modal-title">Mudar categoria</h2>
+        <p style="font-size:13px;color:var(--text-soft);margin:8px 0">Selecione a nova categoria:</p>
+        <div class="bulk-cat-container" style="display:flex;gap:8px;flex-wrap:wrap;margin:12px 0"></div>
+        <div class="modal-actions">
+          <button type="button" class="btn-p" onclick="applyBulkEdit()">Mudar</button>
+          <button type="button" class="btn-sec" onclick="closeBulkEditModal()">Cancelar</button>
+        </div>
+      </div>
+    </div>`;
+    document.body.appendChild(modal);
+  }
+  
+  // Criar botão editar se não existir
+  const filterRow = document.querySelector('.filter-row');
+  if (filterRow && !filterRow.querySelector('[data-edit-btn]')) {
+    const editBtn = document.createElement('button');
+    editBtn.type = 'button';
+    editBtn.className = 'icon-btn';
+    editBtn.innerHTML = '✎';
+    editBtn.title = 'Editar categorias';
+    editBtn.style.display = 'none';
+    editBtn.setAttribute('data-edit-btn', 'true');
+    editBtn.onclick = openBulkEditModal;
+    filterRow.appendChild(editBtn);
+  }
+}
+
+// Inicializar UI ao carregar
+initBulkEditUI();
 if (S.email && S.senha) {
   $('loginScreen').classList.add('hidden');
   $('appScreen').classList.remove('hidden');
