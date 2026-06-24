@@ -16,7 +16,8 @@ const S = {
   items: [],
   households: [],
   permissions: [],
-  statusFilter: 'todos'
+  statusFilter: 'todos',
+  groupByCategory: false
 };
 
 // ========== THEME ==========
@@ -300,7 +301,16 @@ function selectHousehold(hhId, nome) {
   toast(`Loja: ${nome}`, 'success');
 }
 
-// ========== FILTROS DE STATUS ==========
+// ========== AGRUPAMENTO POR CATEGORIA ==========
+function toggleGroupByCategory() {
+  S.groupByCategory = !S.groupByCategory;
+  const btn = document.getElementById('groupToggle');
+  if (btn) {
+    btn.classList.toggle('active', S.groupByCategory);
+  }
+  renderItems();
+}
+// ========== FIM AGRUPAMENTO ==========
 function initStatusFilters() {
   const container = document.getElementById('statusFilters');
   if (!container) return;
@@ -373,40 +383,89 @@ function renderItems() {
     return;
   }
 
-  let html = '<ul class="items">';
+  let html = '';
   
-  filteredItems.forEach(item => {
-    if (isSelectMode) {
-      html += `
-        <li class="item ${item.status === 'sim' ? 'checked' : ''}" style="display:flex;align-items:center;gap:8px">
-          <input type="checkbox" class="item-select" data-id="${item.item_id}" onchange="console.log('checkbox changed')" style="width:20px;height:20px;cursor:pointer;flex-shrink:0">
-          <div class="item-info" style="flex:1">
-            <p class="item-name" style="margin:0">${item.nome_item}</p>
-            <p class="item-meta" style="margin:2px 0 0">${item.quantidade} ${item.unidade} • ${item.emoji || ''} ${item.categoria}</p>
-          </div>
-        </li>
-      `;
-    } else {
-      html += `
-        <li class="item ${item.status === 'sim' ? 'checked' : ''}">
-          <div class="item-check" onclick="toggleItem('${item.item_id}')">
-            ${item.status === 'sim' ? '✓' : ''}
-          </div>
-          <div class="item-info">
-            <p class="item-name">${item.nome_item}</p>
-            <p class="item-meta">${item.quantidade} ${item.unidade} • ${item.emoji || ''} ${item.categoria}</p>
-          </div>
-          <div class="item-actions">
-            <button class="item-action del" onclick="deleteItem('${item.item_id}')">🗑️</button>
-          </div>
-        </li>
-      `;
-    }
-  });
+  // Se agrupado por categoria
+  if (S.groupByCategory) {
+    const grouped = {};
+    filteredItems.forEach(item => {
+      const cat = item.categoria || 'Sem categoria';
+      if (!grouped[cat]) grouped[cat] = [];
+      grouped[cat].push(item);
+    });
+    
+    Object.keys(grouped).sort().forEach(categoria => {
+      html += `<div style="margin-top:20px"><h3 style="margin:0 0 12px 0;font-size:12px;font-weight:700;color:var(--text-soft);text-transform:uppercase">${categoria}</h3>`;
+      html += '<ul class="items" style="margin:0">';
+      
+      grouped[categoria].forEach(item => {
+        if (isSelectMode) {
+          html += `
+            <li class="item ${item.status === 'sim' ? 'checked' : ''}" style="display:flex;align-items:center;gap:8px">
+              <input type="checkbox" class="item-select" data-id="${item.item_id}" onchange="console.log('checkbox changed')" style="width:20px;height:20px;cursor:pointer;flex-shrink:0">
+              <div class="item-info" style="flex:1">
+                <p class="item-name" style="margin:0">${item.nome_item}</p>
+                <p class="item-meta" style="margin:2px 0 0">${item.quantidade} ${item.unidade}</p>
+              </div>
+            </li>
+          `;
+        } else {
+          html += `
+            <li class="item ${item.status === 'sim' ? 'checked' : ''}">
+              <div class="item-check" onclick="toggleItem('${item.item_id}')">
+                ${item.status === 'sim' ? '✓' : ''}
+              </div>
+              <div class="item-info">
+                <p class="item-name">${item.nome_item}</p>
+                <p class="item-meta">${item.quantidade} ${item.unidade}</p>
+              </div>
+              <div class="item-actions">
+                <button class="item-action del" onclick="deleteItem('${item.item_id}')">🗑️</button>
+              </div>
+            </li>
+          `;
+        }
+      });
+      
+      html += '</ul></div>';
+    });
+  } else {
+    // Sem agrupamento
+    html = '<ul class="items">';
+    
+    filteredItems.forEach(item => {
+      if (isSelectMode) {
+        html += `
+          <li class="item ${item.status === 'sim' ? 'checked' : ''}" style="display:flex;align-items:center;gap:8px">
+            <input type="checkbox" class="item-select" data-id="${item.item_id}" onchange="console.log('checkbox changed')" style="width:20px;height:20px;cursor:pointer;flex-shrink:0">
+            <div class="item-info" style="flex:1">
+              <p class="item-name" style="margin:0">${item.nome_item}</p>
+              <p class="item-meta" style="margin:2px 0 0">${item.quantidade} ${item.unidade} • ${item.emoji || ''} ${item.categoria}</p>
+            </div>
+          </li>
+        `;
+      } else {
+        html += `
+          <li class="item ${item.status === 'sim' ? 'checked' : ''}">
+            <div class="item-check" onclick="toggleItem('${item.item_id}')">
+              ${item.status === 'sim' ? '✓' : ''}
+            </div>
+            <div class="item-info">
+              <p class="item-name">${item.nome_item}</p>
+              <p class="item-meta">${item.quantidade} ${item.unidade} • ${item.emoji || ''} ${item.categoria}</p>
+            </div>
+            <div class="item-actions">
+              <button class="item-action del" onclick="deleteItem('${item.item_id}')">🗑️</button>
+            </div>
+          </li>
+        `;
+      }
+    });
+    
+    html += '</ul>';
+  }
   
-  html += '</ul>';
   content.innerHTML = html;
-  
   initStatusFilters();
 }
 
