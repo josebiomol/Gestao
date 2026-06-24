@@ -125,6 +125,9 @@ $('loginForm').addEventListener('submit', async (e) => {
     initSecurity(d.user, d.access_token, d.refresh_token);
     // ================================================
 
+    // Limpar form
+    $('addItemForm').reset();
+
     // UI
     $('loginScreen').classList.add('hidden');
     $('registerScreen').classList.add('hidden');
@@ -139,11 +142,14 @@ $('loginForm').addEventListener('submit', async (e) => {
     // Mostrar households ou main
     if (d.households && d.households.length > 0) {
       S.households = d.households;
-      showHouseholds();
+      $('householdsView').classList.remove('hidden');
+      $('mainView').classList.add('hidden');
+      renderHouseholds();
     } else if (d.user.household_id) {
       S.hhId = String(d.user.household_id);
       localStorage.setItem('hhId', S.hhId);
-      showMain();
+      $('householdsView').classList.add('hidden');
+      $('mainView').classList.remove('hidden');
       loadItems();
     }
 
@@ -199,7 +205,8 @@ $('registerForm').addEventListener('submit', async (e) => {
     $('accRole').textContent = d.user.role.toUpperCase();
     $('avBtn').textContent = d.user.nome.charAt(0).toUpperCase();
 
-    showMain();
+    $('householdsView').classList.add('hidden');
+    $('mainView').classList.remove('hidden');
     loadItems();
     toast('✓ Conta criada!', 'success');
   } catch (err) {
@@ -436,11 +443,14 @@ if (S.email && S.senha) {
     $('avBtn').textContent = d.user.nome.charAt(0).toUpperCase();
 
     if (S.hhId) {
-      showMain();
+      $('householdsView').classList.add('hidden');
+      $('mainView').classList.remove('hidden');
       loadItems();
     } else if (d.households && d.households.length > 0) {
       S.households = d.households;
-      showHouseholds();
+      $('householdsView').classList.remove('hidden');
+      $('mainView').classList.add('hidden');
+      renderHouseholds();
     }
   }).catch(() => showLogin());
 } else {
