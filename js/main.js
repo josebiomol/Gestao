@@ -529,12 +529,21 @@ function closeBulkEditModal() {
 }
 
 async function loadBulkEditCategories() {
+  console.log('loadBulkEditCategories chamado');
   try {
     const d = await jsonp(`${API}?action=getCategories&org_id=${encodeURIComponent(S.orgId)}&email=${encodeURIComponent(S.email)}&senha=${encodeURIComponent(S.senha)}`);
-    if (d.error || !d.categories) return;
+    console.log('Resposta da API:', d);
+    if (d.error || !d.categories) {
+      console.log('Erro na resposta:', d.error);
+      return;
+    }
     
-    const catDiv = document.getElementById('bulkEditCats');
-    if (!catDiv) return;
+    const catDiv = document.querySelector('.bulk-cat-container');
+    console.log('Container encontrado:', catDiv);
+    if (!catDiv) {
+      console.log('Container não encontrado!');
+      return;
+    }
     
     catDiv.innerHTML = '';
     
@@ -547,7 +556,7 @@ async function loadBulkEditCategories() {
     
     generalBtn.addEventListener('click', function(e) {
       e.preventDefault();
-      document.querySelectorAll('#bulkEditCats button').forEach(b => {
+      document.querySelectorAll('.bulk-cat-container button').forEach(b => {
         b.style.borderColor = '#E7E8E6';
         b.style.color = 'var(--text)';
       });
@@ -567,7 +576,7 @@ async function loadBulkEditCategories() {
       
       btn.addEventListener('click', function(e) {
         e.preventDefault();
-        document.querySelectorAll('#bulkEditCats button').forEach(b => {
+        document.querySelectorAll('.bulk-cat-container button').forEach(b => {
           b.style.borderColor = '#E7E8E6';
           b.style.color = 'var(--text)';
         });
@@ -577,6 +586,8 @@ async function loadBulkEditCategories() {
       
       catDiv.appendChild(btn);
     });
+    
+    console.log('Categorias carregadas:', d.categories.length);
   } catch (err) {
     console.log('Erro ao carregar categorias:', err);
   }
