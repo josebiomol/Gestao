@@ -1294,11 +1294,201 @@ async function deleteGroup(groupId) {
 }
 
 function loadCategoriesList() {
-  toast('Categorias em desenvolvimento', 'info');
+  const container = $('categoriesList');
+  container.innerHTML = '<p style="color:var(--text-secondary);font-size:13px">Carregando...</p>';
+  loadCategoriesData();
+}
+
+async function loadCategoriesData() {
+  const container = $('categoriesList');
+  
+  try {
+    const d = await jsonp(`${API}?action=getCategories&org_id=${encodeURIComponent(S.orgId)}&email=${encodeURIComponent(S.email)}&senha=${encodeURIComponent(S.senha)}`);
+    
+    console.log('Categorias carregadas:', d);
+    
+    if (d.error) {
+      container.innerHTML = `<p style="color:var(--danger);font-size:13px">${d.error}</p>`;
+      return;
+    }
+    
+    if (!d.categories || d.categories.length === 0) {
+      container.innerHTML = '<p style="color:var(--text-secondary);font-size:13px">Nenhuma categoria ainda</p>';
+      return;
+    }
+    
+    container.innerHTML = d.categories.map(cat => `
+      <div style="padding:12px;border:1px solid var(--border);border-radius:6px;display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <div style="font-size:16px;margin-bottom:4px">${cat.emoji || '📁'} <strong>${cat.nome}</strong></div>
+          <div style="font-size:12px;color:var(--text-secondary)">
+            Fundo: ${cat.cor_bg || '#FFF'} | Texto: ${cat.cor_text || '#000'}
+          </div>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="user-card-btn" onclick="editCategory('${cat.category_id}', '${cat.nome}', '${cat.emoji || ''}', '${cat.cor_bg || '#FFF'}', '${cat.cor_text || '#000'}')">✏️ Editar</button>
+          <button class="user-card-btn" onclick="deleteCategory('${cat.category_id}')">🗑️</button>
+        </div>
+      </div>
+    `).join('');
+    
+  } catch (err) {
+    console.error('Erro ao carregar categorias:', err);
+    container.innerHTML = '<p style="color:var(--danger);font-size:13px">Erro ao carregar</p>';
+  }
 }
 
 function openNewCategoryModal() {
-  toast('Criar categorias em desenvolvimento', 'info');
+  $('categoryModalTitle').textContent = 'Nova Categoria';
+  document.getElementById('newCategoryForm').reset();
+  $('newCatBgColor').value = '#FF6B6B';
+  $('newCatBgColorPicker').value = '#FF6B6B';
+  $('newCatTextColor').value = '#FFFFFF';
+  $('newCatTextColorPicker').value = '#FFFFFF';
+  $('newCategoryModal').dataset.editId = '';
+  updateCategoryPreview();
+  renderEmojiPicker();
+  $('newCategoryModal').classList.remove('hidden');
+}
+
+function closeNewCategoryModal() {
+  $('newCategoryModal').classList.add('hidden');
+  document.getElementById('newCategoryForm').reset();
+  closeEmojiPicker();
+}
+
+function openEmojiPicker() {
+  const picker = $('emojiPickerContainer');
+  picker.style.display = picker.style.display === 'none' ? 'block' : 'none';
+}
+
+function closeEmojiPicker() {
+  $('emojiPickerContainer').style.display = 'none';
+}
+
+function renderEmojiPicker() {
+  const emojis = ['🍎', '🥕', '🥬', '🍌', '🍊', '🥛', '🧀', '🥚', '🍗', '🥩', '🥐', '🍞', '🥫', '🧂', '🌶️', '🧅', '🥒', '🥔', '🍠', '🌽', '🥦', '🥬', '🍍', '🍓', '🍒', '🍑', '🥑', '🍅', '🥒', '🌶️'];
+  const grid = $('emojiGrid');
+  grid.innerHTML = emojis.map(emoji => `
+    <button type="button" onclick="selectEmoji('${emoji}')" style="padding:8px;background:var(--bg-hover);border:1px solid var(--border);border-radius:4px;cursor:pointer;font-size:20px;transition:all 0.2s">
+      ${emoji}
+    </button>
+  `).join('');
+}
+
+function selectEmoji(emoji) {
+  $('newCatEmoji').value = emoji;
+  closeEmojiPicker();
+  updateCategoryPreview();
+}
+
+function updateCategoryPreview() {
+  const emoji = $('newCatEmoji').value || '📁';
+  const nome = $('newCatName').value || 'Categoria';
+  const bgColor = $('newCatBgColor').value || '#FF6B6B';
+  const textColor = $('newCatTextColor').value || '#FFFFFF';
+  
+  const preview = $('catPreview');
+  preview.textContent = `${emoji} ${nome}`;
+  preview.style.backgroundColor = bgColor;
+  preview.style.color = textColor;
+}
+
+// Sincronizar inputs de cor
+$('newCatBgColor')?.addEventListener('input', function() {
+  $('newCatBgColorPicker').value = this.value;
+  updateCategoryPreview();
+});
+
+$('newCatBgColorPicker')?.addEventListener('input', function() {
+  $('newCatBgColor').value = this.value.toUpperCase();
+  updateCategoryPreview();
+});
+
+$('newCatTextColor')?.addEventListener('input', function() {
+  $('newCatTextColorPicker').value = this.value;
+  updateCategoryPreview();
+});
+
+$('newCatTextColorPicker')?.addEventListener('input', function() {
+  $('newCatTextColor').value = this.value.toUpperCase();
+  updateCategoryPreview();
+});
+
+$('newCatName')?.addEventListener('input', updateCategoryPreview);
+$('newCatEmoji')?.addEventListener('input', updateCategoryPreview);
+
+async function saveNewCategory() {
+  const nome = $('newCatName').value.trim();
+  const emoji = $('newCatEmoji').value || '📁';
+  const cor_bg = $('newCatBgColor').value || '#FF6B6B';
+  const cor_text = $('newCatTextColor').value || '#FFFFFF';
+  const editId = $('newCategoryModal').dataset.editId || '';
+  
+  if (!nome) {
+    toast('Nome da categoria é obrigatório', 'warning');
+    return;
+  }
+  
+  toast(editId ? 'Atualizando categoria...' : 'Criando categoria...', 'loading');
+  
+  try {
+    const action = editId ? 'updateCategory' : 'addCategory';
+    const url = editId
+      ? `${API}?action=${action}&category_id=${encodeURIComponent(editId)}&nome=${encodeURIComponent(nome)}&emoji=${encodeURIComponent(emoji)}&cor_bg=${encodeURIComponent(cor_bg)}&cor_text=${encodeURIComponent(cor_text)}&email=${encodeURIComponent(S.email)}&senha=${encodeURIComponent(S.senha)}`
+      : `${API}?action=${action}&nome=${encodeURIComponent(nome)}&emoji=${encodeURIComponent(emoji)}&cor_bg=${encodeURIComponent(cor_bg)}&cor_text=${encodeURIComponent(cor_text)}&org_id=${encodeURIComponent(S.orgId)}&email=${encodeURIComponent(S.email)}&senha=${encodeURIComponent(S.senha)}`;
+    
+    const d = await jsonp(url);
+    
+    if (d.error) {
+      toast(d.error, 'danger');
+      return;
+    }
+    
+    toast(`✓ Categoria ${editId ? 'atualizada' : 'criada'} com sucesso`, 'success');
+    closeNewCategoryModal();
+    loadCategoriesList();
+  } catch (err) {
+    console.error('Erro:', err);
+    toast('Erro ao salvar categoria', 'danger');
+  }
+}
+
+function editCategory(categoryId, nome, emoji, cor_bg, cor_text) {
+  $('categoryModalTitle').textContent = 'Editar Categoria';
+  $('newCatName').value = nome;
+  $('newCatEmoji').value = emoji;
+  $('newCatBgColor').value = cor_bg;
+  $('newCatBgColorPicker').value = cor_bg;
+  $('newCatTextColor').value = cor_text;
+  $('newCatTextColorPicker').value = cor_text;
+  $('newCategoryModal').dataset.editId = categoryId;
+  updateCategoryPreview();
+  renderEmojiPicker();
+  $('newCategoryModal').classList.remove('hidden');
+}
+
+async function deleteCategory(categoryId) {
+  if (!confirm('Deseja deletar esta categoria?')) {
+    return;
+  }
+  
+  toast('Deletando categoria...', 'loading');
+  
+  try {
+    const d = await jsonp(`${API}?action=deleteCategory&category_id=${encodeURIComponent(categoryId)}&email=${encodeURIComponent(S.email)}&senha=${encodeURIComponent(S.senha)}`);
+    
+    if (d.error) {
+      toast(d.error, 'danger');
+      return;
+    }
+    
+    toast('✓ Categoria deletada', 'success');
+    loadCategoriesList();
+  } catch (err) {
+    console.error('Erro:', err);
+    toast('Erro ao deletar categoria', 'danger');
+  }
 }
 
 // ========== EVENTOS ==========
