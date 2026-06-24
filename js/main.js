@@ -567,13 +567,22 @@ async function loadBulkEditCategories() {
 }
 
 function selectBulkCategory(btn) {
-  const btns = btn.parentElement.querySelectorAll('button');
+  const container = btn.parentElement;
+  const btns = container.querySelectorAll('button');
+  
+  // Remover seleção anterior
   btns.forEach(b => {
     b.style.borderColor = '#E7E8E6';
-    b.style.color = 'inherit';
+    b.style.color = 'var(--text)';
+    b.removeAttribute('data-selected');
   });
+  
+  // Adicionar seleção novo
   btn.style.borderColor = '#16A34A';
   btn.style.color = '#16A34A';
+  btn.setAttribute('data-selected', 'true');
+  
+  console.log('Categoria selecionada:', btn.dataset.cat);
 }
 
 async function applyBulkEdit() {
@@ -583,10 +592,13 @@ async function applyBulkEdit() {
     return;
   }
   
-  const selectedBtn = document.querySelector('#bulkEditModal button[style*="16A34A"]');
+  const selectedBtn = document.querySelector('[data-selected="true"]');
   const newCategory = selectedBtn ? selectedBtn.dataset.cat : '';
   
-  if (!newCategory) {
+  console.log('Itens selecionados:', selected);
+  console.log('Categoria nova:', newCategory);
+  
+  if (!newCategory && selectedBtn?.textContent.trim() !== 'Geral') {
     toast('Selecione categoria', 'warning');
     return;
   }
