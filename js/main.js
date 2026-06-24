@@ -1097,6 +1097,8 @@ async function saveNewUser() {
   const group_id = $('newUserGroup').value || '';
   const editUserId = $('newUserModal').dataset.editUserId || '';
   
+  console.log('DEBUG saveNewUser: nome=', nome, 'email=', novoEmail, 'group_id=', group_id, 'editUserId=', editUserId);
+  
   // Validações
   if (!nome || !novoEmail) {
     toast('Nome e email são obrigatórios', 'warning');
@@ -1149,13 +1151,17 @@ async function saveNewUser() {
       action = 'updateUser';
       const senhaParam = novaSenha ? `&senha=${encodeURIComponent(novaSenha)}` : '';
       url = `${API}?action=${action}&user_id=${encodeURIComponent(editUserId)}&nome=${encodeURIComponent(nome)}&email=${encodeURIComponent(novoEmail)}${senhaParam}&group_id=${encodeURIComponent(group_id)}&permissions=${encodeURIComponent(permissions.join(','))}&accessible_households=${encodeURIComponent(accessible_hh.join(','))}&access_schedule=${encodeURIComponent(JSON.stringify(access_schedule))}&email_auth=${encodeURIComponent(S.email)}&senha_auth=${encodeURIComponent(S.senha)}`;
+      console.log('DEBUG updateUser URL:', url);
     } else {
       // NOVO usuário - senha obrigatória
       action = 'addUser';
       url = `${API}?action=${action}&nome=${encodeURIComponent(nome)}&email=${encodeURIComponent(novoEmail)}&senha=${encodeURIComponent(novaSenha)}&group_id=${encodeURIComponent(group_id)}&permissions=${encodeURIComponent(permissions.join(','))}&accessible_households=${encodeURIComponent(accessible_hh.join(','))}&access_schedule=${encodeURIComponent(JSON.stringify(access_schedule))}&household_id=${encodeURIComponent(S.hhId)}&email_auth=${encodeURIComponent(S.email)}&senha_auth=${encodeURIComponent(S.senha)}`;
+      console.log('DEBUG addUser URL:', url);
     }
     
     const d = await jsonp(url);
+    
+    console.log('DEBUG saveNewUser resposta:', d);
     
     if (d.error) {
       toast(d.error, 'danger');
@@ -1209,9 +1215,13 @@ async function loadUsersList() {
 }
 
 async function editUser(userId) {
+  console.log('DEBUG editUser: S.email=', S.email, 'S.senha=', S.senha ? '***' : 'VAZIO');
+  
   try {
     // Buscar dados do usuário
     const d = await jsonp(`${API}?action=getUserById&user_id=${encodeURIComponent(userId)}&email_auth=${encodeURIComponent(S.email)}&senha_auth=${encodeURIComponent(S.senha)}`);
+    
+    console.log('DEBUG getUserById resposta:', d);
     
     if (d.error) {
       toast(d.error, 'danger');
@@ -1219,6 +1229,7 @@ async function editUser(userId) {
     }
     
     const user = d.user;
+    console.log('DEBUG user dados:', user);
     
     // Abrir modal com dados
     $('newUserModal').classList.remove('hidden');
@@ -1235,8 +1246,11 @@ async function editUser(userId) {
     
     // Carregar grupos e selecionar o do usuário
     loadGroupsForSelect();
+    console.log('DEBUG group_id do usuário:', user.group_id);
+    
     setTimeout(() => {
       $('newUserGroup').value = user.group_id || '';
+      console.log('DEBUG dropdown value setado para:', $('newUserGroup').value);
     }, 100);
     
     // Desmarcar e marcar permissões
