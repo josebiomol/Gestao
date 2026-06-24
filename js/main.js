@@ -953,6 +953,16 @@ function switchSettingsTab(tabName) {
 
 function openNewUserModal() {
   $('newUserModal').classList.remove('hidden');
+  $('newUserModal').dataset.editUserId = '';
+  
+  // Resetar título, botão e dropdown
+  document.querySelector('#newUserModal .modal-title').textContent = 'Convidar membro';
+  $('userModalSaveBtn').textContent = 'Convidar membro';
+  $('newUserGroup').value = '';
+  
+  // Desmarcar permissões
+  document.querySelectorAll('.user-permission').forEach(cb => cb.checked = false);
+  
   renderAccessibleHouseholds();
   renderAccessScheduleTable();
   loadGroupsForSelect();
@@ -962,15 +972,76 @@ function closeNewUserModal() {
   $('newUserModal').classList.add('hidden');
   document.getElementById('newUserForm').reset();
   $('newUserModal').dataset.editUserId = '';
-  // Resetar title para "Convidar membro"
-  const titleEl = document.querySelector('#newUserModal .modal-title');
-  if (titleEl) titleEl.textContent = 'Convidar membro';
+  
+  // Resetar title e botão
+  document.querySelector('#newUserModal .modal-title').textContent = 'Convidar membro';
+  $('userModalSaveBtn').textContent = 'Convidar membro';
+  
+  // Desmarcar permissões
+  document.querySelectorAll('.user-permission').forEach(cb => cb.checked = false);
 }
 
 function loadGroupsForSelect() {
   // Carregar grupos para dropdown
-  // TODO: implementar depois
+  jsonp(`${API}?action=getGroups&org_id=${encodeURIComponent(S.orgId)}&email=${encodeURIComponent(S.email)}&senha=${encodeURIComponent(S.senha)}`)
+    .then(d => {
+      if (d.error) {
+        console.error('Erro ao carregar grupos:', d.error);
+        return;
+      }
+      
+      const select = $('newUserGroup');
+      const currentValue = select.value;
+      
+      // Limpar opções existentes (mantém a primeira)
+      while (select.options.length > 1) {
+        select.remove(1);
+      }
+      
+      // Adicionar grupos
+      if (d.groups && d.groups.length > 0) {
+        d.groups.forEach(group => {
+          const option = document.createElement('option');
+          option.value = group.group_id;
+          option.textContent = `${group.nome} (${(group.permissions || '').split(',').filter(p => p.trim()).length} perms)`;
+          select.appendChild(option);
+        });
+      }
+      
+      // Restaurar valor anterior
+      select.value = currentValue;
+    })
+    .catch(err => console.error('Erro:', err));
 }
+
+// Event listener para auto-marcar permissões ao selecionar grupo
+$('newUserGroup')?.addEventListener('change', function() {
+  if (!this.value) {
+    // Nenhum grupo selecionado - desmarcar tudo
+    document.querySelectorAll('.user-permission').forEach(cb => cb.checked = false);
+    return;
+  }
+  
+  // Buscar dados do grupo
+  jsonp(`${API}?action=getGroups&org_id=${encodeURIComponent(S.orgId)}&email=${encodeURIComponent(S.email)}&senha=${encodeURIComponent(S.senha)}`)
+    .then(d => {
+      if (d.error || !d.groups) return;
+      
+      const selectedGroup = d.groups.find(g => String(g.group_id) === String(this.value));
+      if (!selectedGroup) return;
+      
+      // Desmarcar tudo
+      document.querySelectorAll('.user-permission').forEach(cb => cb.checked = false);
+      
+      // Marcar permissões do grupo
+      const perms = (selectedGroup.permissions || '').split(',').map(p => p.trim()).filter(p => p);
+      perms.forEach(perm => {
+        const checkbox = document.getElementById(`perm-${perm}`);
+        if (checkbox) checkbox.checked = true;
+      });
+    })
+    .catch(err => console.error('Erro:', err));
+});
 
 function renderAccessibleHouseholds() {
   const container = $('accessibleHouseholdsList');
@@ -1153,15 +1224,20 @@ async function editUser(userId) {
     $('newUserModal').classList.remove('hidden');
     $('newUserModal').dataset.editUserId = userId;
     
-    // Atualizar título
-    const titleEl = document.querySelector('#newUserModal .modal-title');
-    if (titleEl) titleEl.textContent = 'Editar Colaborador';
+    // Atualizar título e botão
+    document.querySelector('#newUserModal .modal-title').textContent = 'Editar Colaborador';
+    $('userModalSaveBtn').textContent = 'Alterar dados';
     
     // Preencher campos
     $('newUserName').value = user.nome || '';
     $('newUserEmail').value = user.email || '';
     $('newUserPassword').value = ''; // Deixar vazio - senha opcional
-    $('newUserGroup').value = user.group_id || '';
+    
+    // Carregar grupos e selecionar o do usuário
+    loadGroupsForSelect();
+    setTimeout(() => {
+      $('newUserGroup').value = user.group_id || '';
+    }, 100);
     
     // Desmarcar e marcar permissões
     document.querySelectorAll('.user-permission').forEach(cb => {
