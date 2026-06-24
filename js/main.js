@@ -494,12 +494,12 @@ async function loadCategories() {
     if (d.error || !d.categories) return;
     
     const catDiv = document.createElement('div');
-    catDiv.style.cssText = 'display:flex;gap:8px;flex-wrap:wrap;margin-top:8px';
+    catDiv.style.cssText = 'display:flex;gap:6px;flex-wrap:wrap;margin-top:8px';
     
     const generalBtn = document.createElement('button');
     generalBtn.textContent = 'Geral';
     generalBtn.type = 'button';
-    generalBtn.style.cssText = 'padding:8px 12px;border:2px solid #E7E8E6;background:white;border-radius:8px;cursor:pointer;font-size:13px;flex:0 1 calc(20% - 7px)';
+    generalBtn.style.cssText = 'padding:6px 8px;border:2px solid #E7E8E6;background:white;border-radius:8px;cursor:pointer;font-size:12px;flex:0 1 calc(33.333% - 5px);text-align:center';
     generalBtn.dataset.cat = '';
     generalBtn.dataset.emoji = '';
     generalBtn.onclick = () => selectCategory(generalBtn);
@@ -507,9 +507,9 @@ async function loadCategories() {
     
     d.categories.forEach(cat => {
       const btn = document.createElement('button');
-      btn.innerHTML = `${cat.emoji || ''} ${cat.nome}`;
+      btn.innerHTML = `${cat.emoji || ''}<br>${cat.nome}`;
       btn.type = 'button';
-      btn.style.cssText = 'padding:8px 12px;border:2px solid #E7E8E6;background:white;border-radius:8px;cursor:pointer;font-size:13px;display:flex;align-items:center;gap:4px;flex:0 1 calc(20% - 7px);justify-content:center';
+      btn.style.cssText = 'padding:6px 8px;border:2px solid #E7E8E6;background:white;border-radius:8px;cursor:pointer;font-size:11px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;flex:0 1 calc(33.333% - 5px);text-align:center;line-height:1.2';
       btn.dataset.cat = cat.nome;
       btn.dataset.emoji = cat.emoji || '';
       btn.onclick = () => selectCategory(btn);
