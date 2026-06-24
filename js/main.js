@@ -294,7 +294,7 @@ function renderItems() {
   S.items.forEach(item => {
     if (isSelectMode) {
       html += `
-        <li class="item" style="display:flex;align-items:center;gap:8px">
+        <li class="item ${item.status === 'sim' ? 'checked' : ''}" style="display:flex;align-items:center;gap:8px">
           <input type="checkbox" class="item-select" data-id="${item.item_id}" onchange="console.log('checkbox changed')" style="width:20px;height:20px;cursor:pointer;flex-shrink:0">
           <div class="item-info" style="flex:1">
             <p class="item-name" style="margin:0">${item.nome_item}</p>
