@@ -294,11 +294,11 @@ function renderItems() {
   S.items.forEach(item => {
     if (isSelectMode) {
       html += `
-        <li class="item">
-          <input type="checkbox" class="item-select" data-id="${item.item_id}" style="width:20px;height:20px;cursor:pointer;margin-right:8px">
-          <div class="item-info">
-            <p class="item-name">${item.nome_item}</p>
-            <p class="item-meta">${item.quantidade} ${item.unidade} • ${item.emoji || ''} ${item.categoria}</p>
+        <li class="item" style="display:flex;align-items:center;gap:8px">
+          <input type="checkbox" class="item-select" data-id="${item.item_id}" onchange="console.log('checkbox changed')" style="width:20px;height:20px;cursor:pointer;flex-shrink:0">
+          <div class="item-info" style="flex:1">
+            <p class="item-name" style="margin:0">${item.nome_item}</p>
+            <p class="item-meta" style="margin:2px 0 0">${item.quantidade} ${item.unidade} • ${item.emoji || ''} ${item.categoria}</p>
           </div>
         </li>
       `;
