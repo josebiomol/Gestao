@@ -1587,12 +1587,11 @@ function renderAccessibleHouseholds() {
   if (!S.households || S.households.length === 0) return;
   
   S.households.forEach((hh, idx) => {
-    const isFirst = idx === 0;
     const label = document.createElement('label');
     label.style.cssText = 'display:flex;align-items:center;gap:8px;padding:8px;border:1px solid var(--border);border-radius:6px;cursor:pointer';
     label.innerHTML = `
-      <input type="checkbox" name="accessible_hh" value="${hh.household_id}" ${isFirst ? 'checked' : ''} data-primary="${isFirst}">
-      <span style="font-size:13px">${hh.nome}${isFirst ? ' (principal)' : ''}</span>
+      <input type="checkbox" name="accessible_hh" value="${hh.household_id}" ${idx === 0 ? 'checked' : ''}>
+      <span style="font-size:13px">${hh.nome}</span>
     `;
     container.appendChild(label);
   });
@@ -1684,22 +1683,42 @@ async function saveNewUser() {
   toast(editUserId ? 'Atualizando membro...' : 'Convidando membro...', 'loading');
   
   try {
-    let action, url;
+    let d;
     
     if (editUserId) {
       // EDITAR usuário - senha opcional
-      action = 'updateUser';
-      const senhaParam = novaSenha ? `&senha_nova=${encodeURIComponent(novaSenha)}` : '';
-      url = `${API}?action=${action}&user_id=${encodeURIComponent(editUserId)}&nome=${encodeURIComponent(nome)}&email_novo=${encodeURIComponent(novoEmail)}&role=membro${senhaParam}&group_id=${encodeURIComponent(group_id)}&permissions=${encodeURIComponent(permissions.join(','))}&accessible_households=${encodeURIComponent(accessible_hh.join(','))}&access_schedule=${encodeURIComponent(JSON.stringify(access_schedule))}&email_auth=${encodeURIComponent(S.email)}&senha_auth=${encodeURIComponent(S.senha)}`;
-      console.log('DEBUG updateUser URL:', url);
+      const params = {
+        user_id: editUserId,
+        nome: nome,
+        email_novo: novoEmail,
+        role: 'membro',
+        group_id: group_id,
+        permissions: permissions.join(','),
+        accessible_households: accessible_hh.join(','),
+        access_schedule: JSON.stringify(access_schedule),
+        email_auth: S.email,
+        senha_auth: S.senha
+      };
+      if (novaSenha) params.senha_nova = novaSenha;
+      console.log('DEBUG updateUser params:', params);
+      d = await postData('updateUser', params);
     } else {
       // NOVO usuário - senha obrigatória
-      action = 'addUser';
-      url = `${API}?action=${action}&nome=${encodeURIComponent(nome)}&email=${encodeURIComponent(novoEmail)}&senha=${encodeURIComponent(novaSenha)}&group_id=${encodeURIComponent(group_id)}&permissions=${encodeURIComponent(permissions.join(','))}&accessible_households=${encodeURIComponent(accessible_hh.join(','))}&access_schedule=${encodeURIComponent(JSON.stringify(access_schedule))}&household_id=${encodeURIComponent(S.hhId)}&email_auth=${encodeURIComponent(S.email)}&senha_auth=${encodeURIComponent(S.senha)}`;
-      console.log('DEBUG addUser URL:', url);
+      const params = {
+        nome: nome,
+        email: novoEmail,
+        senha: novaSenha,
+        group_id: group_id,
+        permissions: permissions.join(','),
+        accessible_households: accessible_hh.join(','),
+        access_schedule: JSON.stringify(access_schedule),
+        household_id: S.hhId,
+        email_auth: S.email,
+        senha_auth: S.senha
+      };
+      console.log('DEBUG addUser params:', params);
+      d = await postData('addUser', params);
     }
-    
-    const d = await jsonp(url);
     
     console.log('DEBUG saveNewUser resposta:', d);
     
@@ -1811,7 +1830,7 @@ async function editUser(userId) {
       }
     }
     document.querySelectorAll('input[name="accessible_hh"]').forEach(cb => {
-      cb.checked = accessibleList.includes(String(cb.value)) || cb.value === String(user.household_id);
+      cb.checked = accessibleList.includes(String(cb.value));
     });
     
     // Horários - RENDERIZAR TABELA PRIMEIRO, depois preencher
