@@ -10,6 +10,8 @@ const S = {
   email: localStorage.getItem('email') || '',
   senha: sessionStorage.getItem('senha') || '',
   userId: localStorage.getItem('userId') || '',
+  nome: localStorage.getItem('nome') || '',
+  foto: localStorage.getItem('foto') || '',
   role: localStorage.getItem('role') || '',
   hhId: localStorage.getItem('hhId') || '',
   orgId: localStorage.getItem('orgId') || '',
@@ -155,12 +157,16 @@ $('loginForm').addEventListener('submit', async (e) => {
     S.email = email;
     S.senha = senha;
     S.userId = String(d.user.user_id);
+    S.nome = d.user.nome || '';
+    S.foto = d.user.foto_base64 || '';
     S.role = d.user.role;
     S.orgId = d.user.org_id;
     S.permissions = d.user.permissions || [];
 
     localStorage.setItem('email', email);
     localStorage.setItem('userId', S.userId);
+    localStorage.setItem('nome', S.nome);
+    localStorage.setItem('foto', S.foto);
     localStorage.setItem('role', S.role);
     localStorage.setItem('orgId', S.orgId);
     sessionStorage.setItem('senha', senha);
@@ -180,8 +186,7 @@ $('loginForm').addEventListener('submit', async (e) => {
     // Atualizar perfil
     $('accName').textContent = d.user.nome;
     $('accRole').textContent = d.user.role.toUpperCase();
-    const av = $('avBtn');
-    av.textContent = d.user.nome.charAt(0).toUpperCase();
+    renderAvatar(d.user.nome, d.user.foto_base64);
 
     // Mostrar households ou main
     if (d.households && d.households.length > 0) {
@@ -880,6 +885,131 @@ $('fab').addEventListener('click', openAddItem);
 $('avBtn').addEventListener('click', () => {
   $('accMenu').classList.toggle('hidden');
 });
+
+// ========== AVATAR (foto ou inicial) ==========
+function renderAvatar(nome, foto) {
+  const av = $('avBtn');
+  if (foto && String(foto).startsWith('data:image')) {
+    av.textContent = '';
+    av.style.backgroundImage = `url('${foto}')`;
+    av.style.backgroundSize = 'cover';
+    av.style.backgroundPosition = 'center';
+  } else {
+    av.style.backgroundImage = '';
+    av.textContent = (nome || '?').charAt(0).toUpperCase();
+  }
+}
+
+// ========== EDITAR MEUS DADOS ==========
+$('profileBtn').addEventListener('click', () => {
+  $('accMenu').classList.add('hidden');
+  openMyDataModal();
+});
+
+function openMyDataModal() {
+  $('myDataName').value = S.nome || '';
+  $('myDataPassword').value = '';
+  $('myDataPasswordConfirm').value = '';
+  $('myDataPhoto').value = '';
+  // Preview da foto atual
+  const preview = $('myDataPhotoPreview');
+  if (S.foto && String(S.foto).startsWith('data:image')) {
+    preview.style.backgroundImage = `url('${S.foto}')`;
+    preview.textContent = '';
+  } else {
+    preview.style.backgroundImage = '';
+    preview.textContent = (S.nome || '?').charAt(0).toUpperCase();
+  }
+  // Guardar foto nova temporária (null = não mudou)
+  $('myDataModal').dataset.newPhoto = '';
+  $('myDataModal').classList.remove('hidden');
+}
+
+function closeMyDataModal() {
+  $('myDataModal').classList.add('hidden');
+}
+
+// Processar upload de foto com compressão
+$('myDataPhoto')?.addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  if (file.size > 5 * 1024 * 1024) {
+    toast('Imagem muito grande (máx 5MB)', 'danger');
+    e.target.value = '';
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    const img = new Image();
+    img.onload = () => {
+      // Redimensionar para máx 200x200 e comprimir
+      const canvas = document.createElement('canvas');
+      const maxSize = 200;
+      let { width, height } = img;
+      if (width > height) {
+        if (width > maxSize) { height = height * maxSize / width; width = maxSize; }
+      } else {
+        if (height > maxSize) { width = width * maxSize / height; height = maxSize; }
+      }
+      canvas.width = width;
+      canvas.height = height;
+      canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+      const base64 = canvas.toDataURL('image/jpeg', 0.7);
+      $('myDataModal').dataset.newPhoto = base64;
+      // Atualizar preview
+      const preview = $('myDataPhotoPreview');
+      preview.style.backgroundImage = `url('${base64}')`;
+      preview.textContent = '';
+    };
+    img.src = ev.target.result;
+  };
+  reader.readAsDataURL(file);
+});
+
+async function saveMyData() {
+  const nome = $('myDataName').value.trim();
+  const senha = $('myDataPassword').value;
+  const senhaConfirm = $('myDataPasswordConfirm').value;
+  const newPhoto = $('myDataModal').dataset.newPhoto || '';
+
+  if (!nome) { toast('Nome é obrigatório', 'danger'); return; }
+  if (senha) {
+    if (senha.length < 6) { toast('Senha mínima 6 caracteres', 'danger'); return; }
+    if (senha !== senhaConfirm) { toast('Senhas não conferem', 'danger'); return; }
+  }
+
+  toast('Salvando...', 'loading');
+  try {
+    let url = `${API}?action=updateMyProfile&user_id=${encodeURIComponent(S.userId)}&nome=${encodeURIComponent(nome)}&email_auth=${encodeURIComponent(S.email)}&senha_auth=${encodeURIComponent(S.senha)}`;
+    if (senha) url += `&nova_senha=${encodeURIComponent(senha)}`;
+    if (newPhoto) url += `&foto_base64=${encodeURIComponent(newPhoto)}`;
+
+    const d = await jsonp(url);
+
+    if (d.error) { toast(d.error, 'danger'); return; }
+
+    // Atualizar estado local
+    S.nome = nome;
+    localStorage.setItem('nome', nome);
+    if (newPhoto) {
+      S.foto = newPhoto;
+      localStorage.setItem('foto', newPhoto);
+    }
+    if (senha) {
+      S.senha = senha;
+      sessionStorage.setItem('senha', senha);
+    }
+
+    // Atualizar UI
+    $('accName').textContent = nome;
+    renderAvatar(nome, S.foto);
+
+    closeMyDataModal();
+    toast('✓ Dados atualizados', 'success');
+  } catch (err) {
+    toast('Erro ao salvar', 'danger');
+  }
+}
 
 function initBulkEditUI() {
   // Criar modal se não existir
@@ -1692,9 +1822,14 @@ if (S.email && S.senha) {
 
     initSecurity(d.user, d.access_token || '', d.refresh_token || '');
 
+    S.nome = d.user.nome || '';
+    S.foto = d.user.foto_base64 || '';
+    localStorage.setItem('nome', S.nome);
+    localStorage.setItem('foto', S.foto);
+
     $('accName').textContent = d.user.nome;
     $('accRole').textContent = d.user.role.toUpperCase();
-    $('avBtn').textContent = d.user.nome.charAt(0).toUpperCase();
+    renderAvatar(d.user.nome, d.user.foto_base64);
 
     if (S.hhId) {
       $('householdsView').classList.add('hidden');
