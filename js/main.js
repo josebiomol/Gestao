@@ -47,11 +47,12 @@ function toggleTheme() {
 }
 
 function updateThemeBtn() {
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  const icon = isDark ? '☀️' : '🌙';
   const btn = document.getElementById('themeBtn');
-  if (btn) {
-    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-    btn.innerHTML = isDark ? '☀️' : '🌙';
-  }
+  if (btn) btn.innerHTML = icon;
+  const authBtn = document.getElementById('themeToggleAuth');
+  if (authBtn) authBtn.innerHTML = icon;
 }
 
 // Inicializar tema
@@ -128,6 +129,93 @@ function showRegister() {
   $('loginScreen').classList.add('hidden');
   $('registerScreen').classList.remove('hidden');
 }
+
+// ========== RECUPERAÇÃO DE SENHA ==========
+function openForgotPassword() {
+  $('forgotEmail').value = $('loginEmail').value.trim();
+  $('forgotMsg').style.display = 'none';
+  $('forgotSubmitBtn').disabled = false;
+  $('forgotSubmitBtn').textContent = 'Enviar link';
+  $('forgotModal').classList.remove('hidden');
+}
+
+function closeForgotPassword() {
+  $('forgotModal').classList.add('hidden');
+}
+
+async function submitForgotPassword() {
+  const email = $('forgotEmail').value.trim();
+  if (!email) { toast('Informe seu e-mail', 'danger'); return; }
+
+  const btn = $('forgotSubmitBtn');
+  btn.disabled = true;
+  btn.textContent = 'Enviando...';
+
+  try {
+    const d = await jsonp(`${API}?action=requestPasswordReset&email=${encodeURIComponent(email)}`);
+    if (d.error) {
+      toast(d.error, 'danger');
+      btn.disabled = false;
+      btn.textContent = 'Enviar link';
+      return;
+    }
+    btn.textContent = '✓ Enviado';
+    const msg = $('forgotMsg');
+    msg.style.display = 'block';
+    msg.innerHTML = '✓ E-mail enviado!<br><span style="font-size:12px">Verifique sua caixa de entrada ou spam. O link expira em 1 hora.</span>';
+  } catch (err) {
+    toast('Erro ao enviar e-mail', 'danger');
+    btn.disabled = false;
+    btn.textContent = 'Enviar link';
+  }
+}
+
+// Modal de nova senha (acessado via link ?reset=TOKEN)
+let resetToken = '';
+
+function openResetModal(token) {
+  resetToken = token;
+  $('resetNewPass').value = '';
+  $('resetConfirmPass').value = '';
+  $('resetModal').classList.remove('hidden');
+}
+
+function closeResetModal() {
+  $('resetModal').classList.add('hidden');
+  // Limpar o ?reset= da URL
+  if (window.history.replaceState) {
+    const url = window.location.origin + window.location.pathname;
+    window.history.replaceState({}, document.title, url);
+  }
+}
+
+async function submitResetPassword() {
+  const novaSenha = $('resetNewPass').value;
+  const confirma = $('resetConfirmPass').value;
+
+  if (novaSenha.length < 6) { toast('Mínimo 6 caracteres', 'danger'); return; }
+  if (novaSenha !== confirma) { toast('Senhas não conferem', 'danger'); return; }
+
+  toast('Redefinindo...', 'loading');
+  try {
+    const d = await jsonp(`${API}?action=resetPassword&token=${encodeURIComponent(resetToken)}&nova_senha=${encodeURIComponent(novaSenha)}`);
+    if (d.error) { toast(d.error, 'danger'); return; }
+    closeResetModal();
+    toast('✓ Senha redefinida! Faça login.', 'success');
+  } catch (err) {
+    toast('Erro ao redefinir senha', 'danger');
+  }
+}
+
+// Detectar ?reset=TOKEN na URL ao carregar
+(function checkResetToken() {
+  const params = new URLSearchParams(window.location.search);
+  const token = params.get('reset');
+  if (token) {
+    showLogin();
+    setTimeout(() => openResetModal(token), 300);
+  }
+})();
 
 // ========== LOGIN ==========
 $('loginForm').addEventListener('submit', async (e) => {
