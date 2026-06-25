@@ -410,15 +410,22 @@ async function deleteHousehold(hhId, nome) {
 function selectHousehold(hhId, nome) {
   S.hhId = String(hhId);
   localStorage.setItem('hhId', S.hhId);
-  localStorage.setItem('householdName', nome); // Guardar nome da loja
+  localStorage.setItem('householdName', nome);
   
-  // Atualizar título do app com nome da loja
+  // Atualizar título
   $('appTitle').textContent = nome;
   
-  // Limpar items antigos ANTES de carregar
+  // Limpar items antigos E renderizar tela vazia IMEDIATAMENTE
   S.items = [];
+  S.statusFilter = 'todos'; // Reset filtro também
+  S.searchTerm = ''; // Reset busca
+  $('searchInput').value = '';
+  $('searchClear').style.display = 'none';
   
   showMain();
+  renderItems(); // Renderizar tela vazia/carregando
+  
+  // Depois carregar dados da nova loja
   loadItems();
   toast(`Loja: ${nome}`, 'success');
 }
@@ -483,8 +490,8 @@ async function loadItems() {
 
 function renderItems() {
   const content = $('content');
-  if (!S.items.length) {
-    content.innerHTML = '<div class="empty"><div class="empty-icon">📭</div><p class="empty-text">Nenhum item ainda</p></div>';
+  if (!S.items || S.items.length === 0) {
+    content.innerHTML = '<div class="empty"><div class="empty-icon">⏳</div><p class="empty-text">Carregando itens...</p></div>';
     initStatusFilters();
     return;
   }
