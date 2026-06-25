@@ -1082,6 +1082,9 @@ function renderAccessScheduleTable() {
     const checkbox = row.querySelector('.schedule-checkbox');
     const times = row.querySelectorAll('.schedule-time');
     
+    // Sincronizar estado inicial: se já vem marcado, habilitar os campos
+    times.forEach(t => t.disabled = !checkbox.checked);
+    
     checkbox.addEventListener('change', (e) => {
       times.forEach(t => t.disabled = !e.target.checked);
     });
@@ -1259,7 +1262,9 @@ async function editUser(userId) {
       cb.checked = (user.permissions || '').includes(perm);
     });
     
-    // Lojas acessíveis
+    // Lojas acessíveis - RENDERIZAR PRIMEIRO
+    renderAccessibleHouseholds();
+    
     let accessibleList = [];
     if (user.accessible_households) {
       if (typeof user.accessible_households === 'string') {
@@ -1272,7 +1277,9 @@ async function editUser(userId) {
       cb.checked = accessibleList.includes(String(cb.value)) || cb.value === String(user.household_id);
     });
     
-    // Horários
+    // Horários - RENDERIZAR TABELA PRIMEIRO, depois preencher
+    renderAccessScheduleTable();
+    
     let schedule = {};
     try {
       schedule = JSON.parse(user.access_schedule || '{}');
@@ -1280,9 +1287,10 @@ async function editUser(userId) {
     
     const dias = ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado'];
     dias.forEach(dia => {
-      const checkbox = document.querySelector(`input[data-dia="${dia.charAt(0).toUpperCase() + dia.slice(1)}"]`);
-      const startInput = document.querySelector(`input[data-dia="${dia.charAt(0).toUpperCase() + dia.slice(1)}"][data-type="start"]`);
-      const endInput = document.querySelector(`input[data-dia="${dia.charAt(0).toUpperCase() + dia.slice(1)}"][data-type="end"]`);
+      const diaCap = dia.charAt(0).toUpperCase() + dia.slice(1);
+      const checkbox = document.querySelector(`input.schedule-checkbox[data-dia="${diaCap}"]`);
+      const startInput = document.querySelector(`input.schedule-time[data-dia="${diaCap}"][data-type="start"]`);
+      const endInput = document.querySelector(`input.schedule-time[data-dia="${diaCap}"][data-type="end"]`);
       
       if (checkbox && startInput && endInput) {
         if (schedule[dia]) {
@@ -1298,9 +1306,6 @@ async function editUser(userId) {
         }
       }
     });
-    
-    renderAccessibleHouseholds();
-    renderAccessScheduleTable();
     
   } catch (err) {
     console.error('Erro:', err);
