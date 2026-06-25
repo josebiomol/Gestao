@@ -13,6 +13,7 @@ const S = {
   nome: localStorage.getItem('nome') || '',
   foto: localStorage.getItem('foto') || '',
   role: localStorage.getItem('role') || '',
+  groupName: localStorage.getItem('groupName') || '',
   hhId: localStorage.getItem('hhId') || '',
   orgId: localStorage.getItem('orgId') || '',
   items: [],
@@ -278,6 +279,7 @@ $('loginForm').addEventListener('submit', async (e) => {
     S.nome = d.user.nome || '';
     S.foto = d.user.foto_base64 || '';
     S.role = d.user.role;
+    S.groupName = d.user.group_name || '';
     S.orgId = d.user.org_id;
     S.permissions = d.user.permissions || [];
 
@@ -286,6 +288,7 @@ $('loginForm').addEventListener('submit', async (e) => {
     localStorage.setItem('nome', S.nome);
     localStorage.setItem('foto', S.foto);
     localStorage.setItem('role', S.role);
+    localStorage.setItem('groupName', S.groupName);
     localStorage.setItem('orgId', S.orgId);
     sessionStorage.setItem('senha', senha);
 
@@ -359,11 +362,13 @@ $('registerForm').addEventListener('submit', async (e) => {
     S.senha = senha;
     S.userId = String(d.user.user_id);
     S.role = d.user.role;
+    S.groupName = d.user.group_name || '';
     S.orgId = d.user.org_id;
 
     localStorage.setItem('email', email);
     localStorage.setItem('userId', S.userId);
     localStorage.setItem('role', S.role);
+    localStorage.setItem('groupName', S.groupName);
     localStorage.setItem('orgId', S.orgId);
     sessionStorage.setItem('senha', senha);
 
@@ -440,7 +445,7 @@ function renderHouseholds() {
   const list = $('hhList');
   
   // Mostrar botão criar se tiver permissão
-  const canManage = S.role === 'owner' || (S.permissions || []).includes('manage_lojas');
+  const canManage = (S.role === 'owner' || (S.groupName && S.groupName.toLowerCase() === 'diretor')) || (S.permissions || []).includes('manage_lojas');
   const createBtn = $('createHHBtn');
   if (createBtn) createBtn.style.display = canManage ? 'block' : 'none';
   
@@ -1218,9 +1223,9 @@ function openMyDataModal() {
   $('myDataModal').dataset.newLogo = '';
   $('myDataModal').dataset.removeLogo = '';
 
-  // Seção de logo da empresa: só para owner
+  // Seção de logo da empresa: só para owner e diretor
   const logoSection = $('orgLogoSection');
-  if (S.role === 'owner') {
+  if (S.role === 'owner' || (S.groupName && S.groupName.toLowerCase() === 'diretor')) {
     logoSection.style.display = 'block';
     $('orgLogoInput').value = '';
     const logoPreview = $('orgLogoPreview');
@@ -1407,7 +1412,7 @@ async function saveMyData() {
     // Salvar/remover logo da empresa (só owner)
     const newLogo = $('myDataModal').dataset.newLogo || '';
     const removeLogo = $('myDataModal').dataset.removeLogo === 'true';
-    if (S.role === 'owner' && (newLogo || removeLogo)) {
+    if ((S.role === 'owner' || (S.groupName && S.groupName.toLowerCase() === 'diretor')) && (newLogo || removeLogo)) {
       const logoValue = removeLogo ? '' : newLogo;
       const dLogo = await postData('updateOrgLogo', {
         logo_base64: logoValue,
@@ -2268,8 +2273,10 @@ if (S.email && S.senha) {
 
     S.nome = d.user.nome || '';
     S.foto = d.user.foto_base64 || '';
+    S.groupName = d.user.group_name || '';
     localStorage.setItem('nome', S.nome);
     localStorage.setItem('foto', S.foto);
+    localStorage.setItem('groupName', S.groupName);
 
     $('accName').textContent = d.user.nome;
     $('accRole').textContent = (d.user.group_name || d.user.role || 'Membro').toUpperCase();
