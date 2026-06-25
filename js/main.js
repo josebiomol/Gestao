@@ -1750,6 +1750,8 @@ async function loadUsersList() {
   try {
     const d = await jsonp(`${API}?action=getUsers&household_id=${encodeURIComponent(S.hhId)}&email=${encodeURIComponent(S.email)}&senha=${encodeURIComponent(S.senha)}`);
     
+    if (d._debug) console.log('DEBUG getUsers:', JSON.stringify(d._debug, null, 2));
+    
     if (d.error) {
       container.innerHTML = `<p style="color:var(--danger);font-size:13px">${d.error}</p>`;
       return;
