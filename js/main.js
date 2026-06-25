@@ -2263,6 +2263,9 @@ if (S.email && S.senha) {
     localStorage.setItem('orgLogo', S.orgLogo);
     renderOrgLogo();
 
+    if (d._debug) console.log('DEBUG households (sessão):', JSON.stringify(d._debug, null, 2));
+    if (d.households) console.log('DEBUG households count:', d.households.length, d.households.map(h => h.nome));
+
     if (S.hhId) {
       $('householdsView').classList.add('hidden');
       $('mainView').classList.remove('hidden');
