@@ -181,8 +181,14 @@
   input[type="time"]{width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;background:var(--bg-input);color:var(--text)}
   
   /* TIME TABLE */
-  .schedule-row{display:grid;grid-template-columns:80px 1fr 1fr 1fr;gap:8px;align-items:center;padding:8px;border:1px solid var(--border);border-radius:6px}
-  .schedule-row label{display:flex;align-items:center;gap:8px}
+  .schedule-row{display:grid;grid-template-columns:auto 1fr 1fr;gap:6px;align-items:center;padding:8px;border:1px solid var(--border);border-radius:6px}
+  .schedule-row label{display:flex;align-items:center;gap:8px;margin:0;padding:0}
+  .schedule-row > span{font-size:13px;font-weight:600}
+  .schedule-time{width:100%;min-width:0;box-sizing:border-box;font-size:12px;padding:6px 4px}
+  @media (max-width:480px){
+    .schedule-row{grid-template-columns:auto 1fr 1fr;gap:4px;padding:6px}
+    .schedule-time{font-size:11px;padding:6px 2px}
+  }
   
   /* USER CARD */
   .user-card{padding:12px;border:1px solid var(--border);border-radius:6px;display:flex;justify-content:space-between;align-items:center}
