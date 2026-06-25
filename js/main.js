@@ -19,7 +19,8 @@ const S = {
   households: [],
   permissions: [],
   statusFilter: 'todos',
-  groupByCategory: false
+  groupByCategory: false,
+  searchTerm: ''
 };
 
 // ========== THEME ==========
@@ -498,8 +499,18 @@ function renderItems() {
     filteredItems = S.items.filter(i => i.status === 'sim');
   }
 
+  // Filtrar por busca (nome ou categoria)
+  if (S.searchTerm) {
+    const termo = S.searchTerm.toLowerCase();
+    filteredItems = filteredItems.filter(i =>
+      String(i.nome_item || '').toLowerCase().includes(termo) ||
+      String(i.categoria || '').toLowerCase().includes(termo)
+    );
+  }
+
   if (!filteredItems.length) {
-    content.innerHTML = '<div class="empty"><div class="empty-icon">📭</div><p class="empty-text">Nenhum item nessa categoria</p></div>';
+    const msg = S.searchTerm ? 'Nenhum item encontrado' : 'Nenhum item nessa categoria';
+    content.innerHTML = `<div class="empty"><div class="empty-icon">🔍</div><p class="empty-text">${msg}</p></div>`;
     initStatusFilters();
     return;
   }
@@ -541,6 +552,7 @@ function renderItems() {
                 <p class="item-meta">${item.quantidade} ${item.unidade}</p>
               </div>
               <div class="item-actions">
+                <button class="item-action edit" onclick="openEditItem('${item.item_id}')">✏️</button>
                 <button class="item-action del" onclick="deleteItem('${item.item_id}')">🗑️</button>
               </div>
             </li>
@@ -576,6 +588,7 @@ function renderItems() {
               <p class="item-meta">${item.quantidade} ${item.unidade} • ${item.emoji || ''} ${item.categoria}</p>
             </div>
             <div class="item-actions">
+              <button class="item-action edit" onclick="openEditItem('${item.item_id}')">✏️</button>
               <button class="item-action del" onclick="deleteItem('${item.item_id}')">🗑️</button>
             </div>
           </li>
@@ -600,16 +613,39 @@ function updateEditButton() {
 
 // ========== ADD ITEM ==========
 function openAddItem() {
+  $('addItemModal').dataset.editItemId = '';
+  document.querySelector('#addItemModal .modal-title').textContent = 'Novo Item';
+  $('addItemModal').querySelector('button[type="submit"]').textContent = 'Adicionar';
+  $('addItemForm').reset();
   loadCategories();
+  $('addItemModal').classList.remove('hidden');
+}
+
+function openEditItem(itemId) {
+  const item = S.items.find(i => String(i.item_id) === String(itemId));
+  if (!item) { toast('Item não encontrado', 'danger'); return; }
+
+  $('addItemModal').dataset.editItemId = itemId;
+  document.querySelector('#addItemModal .modal-title').textContent = 'Editar Item';
+  $('addItemModal').querySelector('button[type="submit"]').textContent = 'Salvar';
+
+  $('itemNome').value = item.nome_item || '';
+  $('itemQtd').value = item.quantidade || '1';
+  $('itemUnit').value = item.unidade || 'un';
+
+  // Carregar categorias e pré-selecionar a do item
+  loadCategories(item.categoria);
+
   $('addItemModal').classList.remove('hidden');
 }
 
 function closeAddItem() {
   $('addItemModal').classList.add('hidden');
+  $('addItemModal').dataset.editItemId = '';
   $('addItemForm').reset();
 }
 
-async function loadCategories() {
+async function loadCategories(selectedCat) {
   try {
     const d = await jsonp(`${API}?action=getCategories&org_id=${encodeURIComponent(S.orgId)}&email=${encodeURIComponent(S.email)}&senha=${encodeURIComponent(S.senha)}`);
     if (d.error || !d.categories) return;
@@ -637,13 +673,19 @@ async function loadCategories() {
       catDiv.appendChild(btn);
     });
     
-    const oldSelect = $('itemCat').parentElement;
-    oldSelect.replaceChild(catDiv, $('itemCat'));
+    const oldEl = $('itemCat') || document.querySelector('#addItemForm .item-cat-buttons');
+    if (oldEl) {
+      catDiv.className = 'item-cat-buttons';
+      oldEl.parentElement.replaceChild(catDiv, oldEl);
+    }
     
-    // Selecionar Geral por padrão
-    generalBtn.style.borderColor = '#16A34A';
-    generalBtn.style.color = '#16A34A';
-    generalBtn.dataset.selected = 'true';
+    // Selecionar a categoria correta (a do item em edição, ou Geral)
+    let target = generalBtn;
+    if (selectedCat) {
+      const match = Array.from(catDiv.querySelectorAll('button')).find(b => b.dataset.cat === selectedCat);
+      if (match) target = match;
+    }
+    selectCategory(target);
   } catch (err) {
     console.log('Erro ao carregar categorias');
   }
@@ -683,17 +725,26 @@ $('addItemForm').addEventListener('submit', async (e) => {
   
   // Pegar categoria do botão selecionado
   const selectedBtn = document.querySelector('button[data-selected="true"]');
-  const cat = selectedBtn ? selectedBtn.dataset.cat : 'geral';
+  const cat = selectedBtn ? selectedBtn.dataset.cat : '';
 
   if (!nome) {
     toast('Nome obrigatório', 'danger');
     return;
   }
 
-  toast('Adicionando...', 'loading');
+  const editItemId = $('addItemModal').dataset.editItemId || '';
+
+  toast(editItemId ? 'Salvando...' : 'Adicionando...', 'loading');
 
   try {
-    const d = await jsonp(`${API}?action=addItem&nome_item=${encodeURIComponent(nome)}&quantidade=${qty}&unidade=${unit}&categoria=${cat}&household_id=${encodeURIComponent(S.hhId)}&email=${encodeURIComponent(S.email)}&senha=${encodeURIComponent(S.senha)}`);
+    let url;
+    if (editItemId) {
+      url = `${API}?action=editItem&item_id=${encodeURIComponent(editItemId)}&nome_item=${encodeURIComponent(nome)}&quantidade=${qty}&unidade=${unit}&categoria=${encodeURIComponent(cat)}&household_id=${encodeURIComponent(S.hhId)}&email=${encodeURIComponent(S.email)}&senha=${encodeURIComponent(S.senha)}`;
+    } else {
+      url = `${API}?action=addItem&nome_item=${encodeURIComponent(nome)}&quantidade=${qty}&unidade=${unit}&categoria=${encodeURIComponent(cat)}&household_id=${encodeURIComponent(S.hhId)}&email=${encodeURIComponent(S.email)}&senha=${encodeURIComponent(S.senha)}`;
+    }
+
+    const d = await jsonp(url);
 
     if (d.error) {
       toast(d.error, 'danger');
@@ -702,9 +753,9 @@ $('addItemForm').addEventListener('submit', async (e) => {
 
     closeAddItem();
     loadItems();
-    toast('✓ Item adicionado', 'success');
+    toast(editItemId ? '✓ Item atualizado' : '✓ Item adicionado', 'success');
   } catch (err) {
-    toast('Erro ao adicionar', 'danger');
+    toast(editItemId ? 'Erro ao salvar' : 'Erro ao adicionar', 'danger');
   }
 });
 
@@ -957,6 +1008,20 @@ $('fab').addEventListener('click', openAddItem);
 
 $('avBtn').addEventListener('click', () => {
   $('accMenu').classList.toggle('hidden');
+});
+
+// ========== BUSCA ==========
+$('searchInput')?.addEventListener('input', (e) => {
+  S.searchTerm = e.target.value.trim();
+  $('searchClear').style.display = S.searchTerm ? 'block' : 'none';
+  renderItems();
+});
+
+$('searchClear')?.addEventListener('click', () => {
+  S.searchTerm = '';
+  $('searchInput').value = '';
+  $('searchClear').style.display = 'none';
+  renderItems();
 });
 
 // ========== AVATAR (foto ou inicial) ==========
