@@ -20,7 +20,8 @@ const S = {
   permissions: [],
   statusFilter: 'todos',
   groupByCategory: false,
-  searchTerm: ''
+  searchTerm: '',
+  isLoadingItems: false
 };
 
 // ========== THEME ==========
@@ -417,13 +418,14 @@ function selectHousehold(hhId, nome) {
   
   // Limpar items antigos E renderizar tela vazia IMEDIATAMENTE
   S.items = [];
+  S.isLoadingItems = true; // Ativar indicador de carregamento
   S.statusFilter = 'todos'; // Reset filtro também
   S.searchTerm = ''; // Reset busca
   $('searchInput').value = '';
   $('searchClear').style.display = 'none';
   
   showMain();
-  renderItems(); // Renderizar tela vazia/carregando
+  renderItems(); // Renderizar tela de carregamento
   
   // Depois carregar dados da nova loja
   loadItems();
@@ -478,20 +480,33 @@ async function loadItems() {
   try {
     const d = await jsonp(`${API}?action=getItems&household_id=${encodeURIComponent(S.hhId)}&email=${encodeURIComponent(S.email)}&senha=${encodeURIComponent(S.senha)}`);
     if (d.error) {
+      S.isLoadingItems = false;
       toast(d.error, 'danger');
+      renderItems();
       return;
     }
     S.items = d.items || [];
+    S.isLoadingItems = false;
     renderItems();
   } catch (err) {
+    S.isLoadingItems = false;
     toast('Erro ao carregar itens', 'danger');
+    renderItems();
   }
 }
 
 function renderItems() {
   const content = $('content');
-  if (!S.items || S.items.length === 0) {
+  
+  // Se está carregando, mostrar indicador
+  if (S.isLoadingItems) {
     content.innerHTML = '<div class="empty"><div class="empty-icon">⏳</div><p class="empty-text">Carregando itens...</p></div>';
+    initStatusFilters();
+    return;
+  }
+  
+  if (!S.items || S.items.length === 0) {
+    content.innerHTML = '<div class="empty"><div class="empty-icon">📭</div><p class="empty-text">Nenhum item ainda</p></div>';
     initStatusFilters();
     return;
   }
