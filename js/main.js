@@ -1282,7 +1282,7 @@ $('myDataPhoto')?.addEventListener('change', (e) => {
   reader.readAsDataURL(file);
 });
 
-// Processar upload da LOGO da empresa (alta resolução, máx 400px)
+// Processar upload da LOGO da empresa, garantindo que caiba no limite do Sheets (50K chars/célula)
 $('orgLogoInput')?.addEventListener('change', (e) => {
   const file = e.target.files[0];
   if (!file) return;
@@ -1295,20 +1295,49 @@ $('orgLogoInput')?.addEventListener('change', (e) => {
   reader.onload = (ev) => {
     const img = new Image();
     img.onload = () => {
-      const canvas = document.createElement('canvas');
-      const maxSize = 400; // logo em alta resolução
-      let { width, height } = img;
-      if (width > height) {
-        if (width > maxSize) { height = height * maxSize / width; width = maxSize; }
-      } else {
-        if (height > maxSize) { width = width * maxSize / height; height = maxSize; }
+      const LIMITE = 45000; // margem de segurança do limite de 50K da célula
+
+      // Tentar tamanhos decrescentes até caber no limite
+      function gerar(maxSize, quality) {
+        const canvas = document.createElement('canvas');
+        let { width, height } = img;
+        if (width > height) {
+          if (width > maxSize) { height = height * maxSize / width; width = maxSize; }
+        } else {
+          if (height > maxSize) { width = width * maxSize / height; height = maxSize; }
+        }
+        canvas.width = width;
+        canvas.height = height;
+        // Fundo branco (JPEG não tem transparência) para logos com fundo transparente
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fillRect(0, 0, width, height);
+        ctx.drawImage(img, 0, 0, width, height);
+        return canvas.toDataURL('image/jpeg', quality);
       }
-      canvas.width = width;
-      canvas.height = height;
-      canvas.getContext('2d').drawImage(img, 0, 0, width, height);
-      const base64 = canvas.toDataURL('image/png'); // PNG preserva transparência da logo
+
+      // Reduzir progressivamente até caber
+      const tentativas = [
+        [400, 0.85], [350, 0.8], [300, 0.75], [250, 0.7],
+        [200, 0.65], [180, 0.6], [150, 0.55], [120, 0.5]
+      ];
+      let base64 = null;
+      for (const [size, q] of tentativas) {
+        const candidato = gerar(size, q);
+        if (candidato.length <= LIMITE) { base64 = candidato; break; }
+      }
+      if (!base64) {
+        // Última tentativa bem pequena
+        base64 = gerar(100, 0.4);
+        if (base64.length > LIMITE) {
+          toast('Imagem muito complexa. Tente uma logo mais simples.', 'danger');
+          e.target.value = '';
+          return;
+        }
+      }
+
       $('myDataModal').dataset.newLogo = base64;
-      $('myDataModal').dataset.removeLogo = ''; // cancelar remoção se havia
+      $('myDataModal').dataset.removeLogo = '';
       const preview = $('orgLogoPreview');
       preview.style.backgroundImage = `url('${base64}')`;
       preview.textContent = '';
