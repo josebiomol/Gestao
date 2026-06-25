@@ -61,6 +61,9 @@
   .hh-card:hover{border-color:var(--green)}
   .hh-name{font-weight:700;font-size:15px}
   .hh-meta{font-size:12px;color:var(--text-soft);margin-top:2px}
+  .hh-actions{display:flex;align-items:center;gap:4px}
+  .hh-icon{width:36px;height:36px;display:flex;align-items:center;justify-content:center;background:none;border:none;border-radius:8px;font-size:16px;cursor:pointer;color:var(--text-soft);transition:background .15s}
+  .hh-icon:hover{background:var(--border)}
   .hh-acts{display:flex;gap:8px}
   .hh-ab{background:none;border:none;color:var(--text-soft);font-size:15px;padding:4px;cursor:pointer}
   .hh-ab:hover{color:var(--green)}.hh-ab.del:hover{color:var(--danger)}
@@ -272,10 +275,10 @@
 
     <!-- Households Screen -->
     <div id="householdsView" class="hh-screen hidden">
-      <h2>Minhas Lojas</h2>
-      <p class="sub">Selecione uma loja para gerenciar</p>
+      <h2>Minhas lojas/casas</h2>
+      <p class="sub">Selecione onde deseja trabalhar agora.</p>
       <div class="hh-list" id="hhList"></div>
-      <button class="hh-add" id="createHHBtn" style="display:none">+ Nova loja</button>
+      <button class="hh-add" id="createHHBtn" onclick="openCreateHousehold()" style="display:none">+ Criar nova casa / loja</button>
     </div>
 
     <!-- Main App Screen -->
