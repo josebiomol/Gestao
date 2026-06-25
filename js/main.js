@@ -21,8 +21,22 @@ const S = {
   statusFilter: 'todos',
   groupByCategory: false,
   searchTerm: '',
-  isLoadingItems: false
+  isLoadingItems: false,
+  orgLogo: localStorage.getItem('orgLogo') || ''
 };
+
+// Renderizar logo da empresa no header
+function renderOrgLogo() {
+  const el = document.getElementById('orgLogo');
+  if (!el) return;
+  if (S.orgLogo && String(S.orgLogo).startsWith('data:image')) {
+    el.textContent = '';
+    el.style.backgroundImage = `url('${S.orgLogo}')`;
+  } else {
+    el.style.backgroundImage = '';
+    el.textContent = '🏢';
+  }
+}
 
 // ========== THEME ==========
 function initTheme() {
@@ -277,6 +291,11 @@ $('loginForm').addEventListener('submit', async (e) => {
     $('accName').textContent = d.user.nome;
     $('accRole').textContent = d.user.role.toUpperCase();
     renderAvatar(d.user.nome, d.user.foto_base64);
+
+    // Logo da organização
+    S.orgLogo = d.org_logo || '';
+    localStorage.setItem('orgLogo', S.orgLogo);
+    renderOrgLogo();
 
     // Mostrar households ou main
     if (d.households && d.households.length > 0) {
@@ -1170,6 +1189,25 @@ function openMyDataModal() {
   }
   // Guardar foto nova temporária (null = não mudou)
   $('myDataModal').dataset.newPhoto = '';
+  $('myDataModal').dataset.newLogo = '';
+
+  // Seção de logo da empresa: só para owner
+  const logoSection = $('orgLogoSection');
+  if (S.role === 'owner') {
+    logoSection.style.display = 'block';
+    $('orgLogoInput').value = '';
+    const logoPreview = $('orgLogoPreview');
+    if (S.orgLogo && String(S.orgLogo).startsWith('data:image')) {
+      logoPreview.style.backgroundImage = `url('${S.orgLogo}')`;
+      logoPreview.textContent = '';
+    } else {
+      logoPreview.style.backgroundImage = '';
+      logoPreview.textContent = '🏢';
+    }
+  } else {
+    logoSection.style.display = 'none';
+  }
+
   $('myDataModal').classList.remove('hidden');
 }
 
@@ -1206,6 +1244,41 @@ $('myDataPhoto')?.addEventListener('change', (e) => {
       $('myDataModal').dataset.newPhoto = base64;
       // Atualizar preview
       const preview = $('myDataPhotoPreview');
+      preview.style.backgroundImage = `url('${base64}')`;
+      preview.textContent = '';
+    };
+    img.src = ev.target.result;
+  };
+  reader.readAsDataURL(file);
+});
+
+// Processar upload da LOGO da empresa (alta resolução, máx 400px)
+$('orgLogoInput')?.addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  if (file.size > 5 * 1024 * 1024) {
+    toast('Imagem muito grande (máx 5MB)', 'danger');
+    e.target.value = '';
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      const maxSize = 400; // logo em alta resolução
+      let { width, height } = img;
+      if (width > height) {
+        if (width > maxSize) { height = height * maxSize / width; width = maxSize; }
+      } else {
+        if (height > maxSize) { width = width * maxSize / height; height = maxSize; }
+      }
+      canvas.width = width;
+      canvas.height = height;
+      canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+      const base64 = canvas.toDataURL('image/png'); // PNG preserva transparência da logo
+      $('myDataModal').dataset.newLogo = base64;
+      const preview = $('orgLogoPreview');
       preview.style.backgroundImage = `url('${base64}')`;
       preview.textContent = '';
     };
@@ -1251,6 +1324,19 @@ async function saveMyData() {
     // Atualizar UI
     $('accName').textContent = nome;
     renderAvatar(nome, S.foto);
+
+    // Salvar logo da empresa (se owner e alterou)
+    const newLogo = $('myDataModal').dataset.newLogo || '';
+    if (S.role === 'owner' && newLogo) {
+      const dLogo = await jsonp(`${API}?action=updateOrgLogo&logo_base64=${encodeURIComponent(newLogo)}&email_auth=${encodeURIComponent(S.email)}&senha_auth=${encodeURIComponent(S.senha)}`);
+      if (dLogo.error) {
+        toast('Dados salvos, mas erro na logo: ' + dLogo.error, 'danger');
+      } else {
+        S.orgLogo = newLogo;
+        localStorage.setItem('orgLogo', newLogo);
+        renderOrgLogo();
+      }
+    }
 
     closeMyDataModal();
     toast('✓ Dados atualizados', 'success');
@@ -2078,6 +2164,11 @@ if (S.email && S.senha) {
     $('accName').textContent = d.user.nome;
     $('accRole').textContent = d.user.role.toUpperCase();
     renderAvatar(d.user.nome, d.user.foto_base64);
+
+    // Logo da organização
+    S.orgLogo = d.org_logo || '';
+    localStorage.setItem('orgLogo', S.orgLogo);
+    renderOrgLogo();
 
     if (S.hhId) {
       $('householdsView').classList.add('hidden');
