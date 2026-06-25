@@ -133,6 +133,20 @@ function jsonp(url) {
   return fetch(url).then(r => r.json());
 }
 
+// Para payloads grandes (ex: imagens base64) que estouram o limite de URL do GET
+function postData(action, params) {
+  const form = new URLSearchParams();
+  form.append('action', action);
+  for (const key in params) {
+    form.append(key, params[key]);
+  }
+  return fetch(API, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: form.toString()
+  }).then(r => r.json());
+}
+
 function showLogin() {
   $('loginScreen').classList.remove('hidden');
   $('registerScreen').classList.add('hidden');
@@ -1190,6 +1204,7 @@ function openMyDataModal() {
   // Guardar foto nova temporária (null = não mudou)
   $('myDataModal').dataset.newPhoto = '';
   $('myDataModal').dataset.newLogo = '';
+  $('myDataModal').dataset.removeLogo = '';
 
   // Seção de logo da empresa: só para owner
   const logoSection = $('orgLogoSection');
@@ -1197,13 +1212,16 @@ function openMyDataModal() {
     logoSection.style.display = 'block';
     $('orgLogoInput').value = '';
     const logoPreview = $('orgLogoPreview');
-    if (S.orgLogo && String(S.orgLogo).startsWith('data:image')) {
+    const hasLogo = S.orgLogo && String(S.orgLogo).startsWith('data:image');
+    if (hasLogo) {
       logoPreview.style.backgroundImage = `url('${S.orgLogo}')`;
       logoPreview.textContent = '';
     } else {
       logoPreview.style.backgroundImage = '';
       logoPreview.textContent = '🏢';
     }
+    // Botão remover só aparece se já existe logo
+    $('orgLogoRemoveBtn').style.display = hasLogo ? 'block' : 'none';
   } else {
     logoSection.style.display = 'none';
   }
@@ -1213,6 +1231,18 @@ function openMyDataModal() {
 
 function closeMyDataModal() {
   $('myDataModal').classList.add('hidden');
+}
+
+// Marcar logo para remoção (volta ao ícone padrão ao salvar)
+function removeOrgLogo() {
+  $('myDataModal').dataset.removeLogo = 'true';
+  $('myDataModal').dataset.newLogo = '';
+  $('orgLogoInput').value = '';
+  const preview = $('orgLogoPreview');
+  preview.style.backgroundImage = '';
+  preview.textContent = '🏢';
+  $('orgLogoRemoveBtn').style.display = 'none';
+  toast('Logo será removida ao salvar', 'loading');
 }
 
 // Processar upload de foto com compressão
@@ -1278,9 +1308,11 @@ $('orgLogoInput')?.addEventListener('change', (e) => {
       canvas.getContext('2d').drawImage(img, 0, 0, width, height);
       const base64 = canvas.toDataURL('image/png'); // PNG preserva transparência da logo
       $('myDataModal').dataset.newLogo = base64;
+      $('myDataModal').dataset.removeLogo = ''; // cancelar remoção se havia
       const preview = $('orgLogoPreview');
       preview.style.backgroundImage = `url('${base64}')`;
       preview.textContent = '';
+      $('orgLogoRemoveBtn').style.display = 'block';
     };
     img.src = ev.target.result;
   };
@@ -1301,11 +1333,17 @@ async function saveMyData() {
 
   toast('Salvando...', 'loading');
   try {
-    let url = `${API}?action=updateMyProfile&user_id=${encodeURIComponent(S.userId)}&nome=${encodeURIComponent(nome)}&email_auth=${encodeURIComponent(S.email)}&senha_auth=${encodeURIComponent(S.senha)}`;
-    if (senha) url += `&nova_senha=${encodeURIComponent(senha)}`;
-    if (newPhoto) url += `&foto_base64=${encodeURIComponent(newPhoto)}`;
+    // Perfil pessoal via POST (foto base64 pode ser grande)
+    const profileParams = {
+      user_id: S.userId,
+      nome: nome,
+      email_auth: S.email,
+      senha_auth: S.senha
+    };
+    if (senha) profileParams.nova_senha = senha;
+    if (newPhoto) profileParams.foto_base64 = newPhoto;
 
-    const d = await jsonp(url);
+    const d = await postData('updateMyProfile', profileParams);
 
     if (d.error) { toast(d.error, 'danger'); return; }
 
@@ -1325,15 +1363,21 @@ async function saveMyData() {
     $('accName').textContent = nome;
     renderAvatar(nome, S.foto);
 
-    // Salvar logo da empresa (se owner e alterou)
+    // Salvar/remover logo da empresa (só owner)
     const newLogo = $('myDataModal').dataset.newLogo || '';
-    if (S.role === 'owner' && newLogo) {
-      const dLogo = await jsonp(`${API}?action=updateOrgLogo&logo_base64=${encodeURIComponent(newLogo)}&email_auth=${encodeURIComponent(S.email)}&senha_auth=${encodeURIComponent(S.senha)}`);
+    const removeLogo = $('myDataModal').dataset.removeLogo === 'true';
+    if (S.role === 'owner' && (newLogo || removeLogo)) {
+      const logoValue = removeLogo ? '' : newLogo;
+      const dLogo = await postData('updateOrgLogo', {
+        logo_base64: logoValue,
+        email_auth: S.email,
+        senha_auth: S.senha
+      });
       if (dLogo.error) {
         toast('Dados salvos, mas erro na logo: ' + dLogo.error, 'danger');
       } else {
-        S.orgLogo = newLogo;
-        localStorage.setItem('orgLogo', newLogo);
+        S.orgLogo = logoValue;
+        localStorage.setItem('orgLogo', logoValue);
         renderOrgLogo();
       }
     }
