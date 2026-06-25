@@ -303,7 +303,7 @@ $('loginForm').addEventListener('submit', async (e) => {
 
     // Atualizar perfil
     $('accName').textContent = d.user.nome;
-    $('accRole').textContent = d.user.role.toUpperCase();
+    $('accRole').textContent = (d.user.group_name || d.user.role || 'Membro').toUpperCase();
     renderAvatar(d.user.nome, d.user.foto_base64);
 
     // Logo da organização
@@ -374,7 +374,7 @@ $('registerForm').addEventListener('submit', async (e) => {
     $('appScreen').classList.remove('hidden');
 
     $('accName').textContent = d.user.nome;
-    $('accRole').textContent = d.user.role.toUpperCase();
+    $('accRole').textContent = (d.user.group_name || d.user.role || 'Membro').toUpperCase();
     $('avBtn').textContent = d.user.nome.charAt(0).toUpperCase();
 
     $('householdsView').classList.add('hidden');
@@ -1149,8 +1149,20 @@ $('settingsBtn').addEventListener('click', () => {
 
 $('fab').addEventListener('click', openAddItem);
 
-$('avBtn').addEventListener('click', () => {
+$('avBtn').addEventListener('click', (e) => {
+  e.stopPropagation();
   $('accMenu').classList.toggle('hidden');
+});
+
+// Fechar menu de perfil ao clicar fora
+document.addEventListener('click', (e) => {
+  const menu = $('accMenu');
+  const avBtn = $('avBtn');
+  if (menu && !menu.classList.contains('hidden')) {
+    if (!menu.contains(e.target) && e.target !== avBtn) {
+      menu.classList.add('hidden');
+    }
+  }
 });
 
 // ========== BUSCA ==========
@@ -1750,8 +1762,6 @@ async function loadUsersList() {
   try {
     const d = await jsonp(`${API}?action=getUsers&household_id=${encodeURIComponent(S.hhId)}&email=${encodeURIComponent(S.email)}&senha=${encodeURIComponent(S.senha)}`);
     
-    if (d._debug) console.log('DEBUG getUsers:', JSON.stringify(d._debug, null, 2));
-    
     if (d.error) {
       container.innerHTML = `<p style="color:var(--danger);font-size:13px">${d.error}</p>`;
       return;
@@ -1766,7 +1776,7 @@ async function loadUsersList() {
       <div class="user-card">
         <div class="user-card-info">
           <div class="user-card-name">👤 ${user.nome}</div>
-          <div class="user-card-role">${user.role || 'Membro'}</div>
+          <div class="user-card-role">${user.group_name || user.role || 'Membro'}</div>
         </div>
         <div class="user-card-actions">
           <button class="user-card-btn" onclick="editUser('${user.user_id}')">✏️ Editar</button>
@@ -2246,6 +2256,7 @@ initBulkEditUI();
 if (S.email && S.senha) {
   $('loginScreen').classList.add('hidden');
   $('appScreen').classList.remove('hidden');
+  $('accMenu').classList.add('hidden');
   
   jsonp(`${API}?action=login&email=${encodeURIComponent(S.email)}&senha=${encodeURIComponent(S.senha)}`).then(d => {
     if (d.error || d.needsPassword) {
@@ -2261,7 +2272,7 @@ if (S.email && S.senha) {
     localStorage.setItem('foto', S.foto);
 
     $('accName').textContent = d.user.nome;
-    $('accRole').textContent = d.user.role.toUpperCase();
+    $('accRole').textContent = (d.user.group_name || d.user.role || 'Membro').toUpperCase();
     renderAvatar(d.user.nome, d.user.foto_base64);
 
     // Logo da organização
