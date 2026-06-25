@@ -30,7 +30,12 @@
   .acc-btn:hover{border-color:var(--green);color:var(--green)}
   .acc-logout{width:100%;background:transparent;border:1px solid var(--border);color:var(--text);padding:8px;border-radius:8px;cursor:pointer;font-family:'Inter',sans-serif;font-size:13px}
   .acc-logout:hover{border-color:var(--danger);color:var(--danger)}
-  .auth-screen{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px;text-align:center}
+  .auth-screen{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px;text-align:center;position:relative}
+  .theme-toggle-auth{position:absolute;top:20px;right:20px;width:44px;height:44px;border-radius:50%;border:1px solid var(--border);background:var(--card);font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow)}
+  .link-forgot{background:none;border:none;color:var(--green);font-size:14px;font-weight:600;cursor:pointer;margin-top:16px;text-decoration:underline;font-family:'Inter',sans-serif}
+  .auth-divider{display:flex;align-items:center;width:100%;margin:20px 0;color:var(--text-soft);font-size:13px}
+  .auth-divider::before,.auth-divider::after{content:'';flex:1;height:1px;background:var(--border)}
+  .auth-divider span{padding:0 12px}
   .auth-icon{width:64px;height:64px;border-radius:20px;background:var(--green-bg);display:flex;align-items:center;justify-content:center;font-size:28px;margin-bottom:18px}
   .auth-screen h1{font-family:'Archivo',sans-serif;font-size:22px;margin:0 0 6px}
   .auth-screen p{color:var(--text-soft);font-size:13px;margin:0 0 24px;line-height:1.5}
@@ -214,17 +219,61 @@
   
   <!-- Login Screen -->
   <div id="loginScreen" class="auth-screen">
-    <div class="auth-icon">🔐</div>
-    <h1>Gestão Multi-loja</h1>
-    <p>Faça login para acessar suas listas</p>
+    <button class="theme-toggle-auth" id="themeToggleAuth" onclick="toggleTheme()" title="Alternar tema">🌙</button>
+    <div class="auth-icon">🛍️</div>
+    <h1>Bem-vindo</h1>
+    <p>Organize as compras da sua casa ou empresa.</p>
     
     <form id="loginForm">
-      <input type="email" id="loginEmail" placeholder="E-mail" required>
+      <input type="email" id="loginEmail" placeholder="Seu e-mail" required>
       <input type="password" id="loginSenha" placeholder="Senha" required>
       <button type="submit" class="btn-p">Entrar</button>
     </form>
     
+    <button type="button" class="link-forgot" onclick="openForgotPassword()">Esqueceu a senha?</button>
+    
+    <div class="auth-divider"><span>ou</span></div>
+    
     <button class="btn-back" onclick="showRegister()">Criar nova conta</button>
+  </div>
+
+  <!-- MODAL: RECUPERAR SENHA -->
+  <div id="forgotModal" class="modal hidden">
+    <div class="modal-content" style="max-width:420px">
+      <div class="modal-header">
+        <h2 class="modal-title" style="margin:0">Recuperar senha</h2>
+        <button class="modal-close" onclick="closeForgotPassword()">✕</button>
+      </div>
+      <div style="padding:16px;display:flex;flex-direction:column;gap:12px">
+        <div>
+          <label style="display:block;font-size:12px;color:var(--text-secondary);margin-bottom:6px">E-mail cadastrado</label>
+          <input type="email" id="forgotEmail" placeholder="seu@email.com" style="width:100%;box-sizing:border-box;padding:12px;border:1px solid var(--border);border-radius:8px;background:var(--bg-input);color:var(--text)">
+        </div>
+        <button type="button" class="btn-p" id="forgotSubmitBtn" onclick="submitForgotPassword()">Enviar link</button>
+        <div id="forgotMsg" style="display:none;text-align:center;font-size:13px;color:var(--text-secondary)"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: NOVA SENHA (via token) -->
+  <div id="resetModal" class="modal hidden">
+    <div class="modal-content" style="max-width:420px">
+      <div class="modal-header">
+        <h2 class="modal-title" style="margin:0">Nova senha</h2>
+        <button class="modal-close" onclick="closeResetModal()">✕</button>
+      </div>
+      <div style="padding:16px;display:flex;flex-direction:column;gap:12px">
+        <div>
+          <label style="display:block;font-size:12px;color:var(--text-secondary);margin-bottom:6px">Nova senha (mín. 6 caracteres)</label>
+          <input type="password" id="resetNewPass" placeholder="Nova senha" style="width:100%;box-sizing:border-box;padding:12px;border:1px solid var(--border);border-radius:8px;background:var(--bg-input);color:var(--text)">
+        </div>
+        <div>
+          <label style="display:block;font-size:12px;color:var(--text-secondary);margin-bottom:6px">Confirme</label>
+          <input type="password" id="resetConfirmPass" placeholder="Repita a senha" style="width:100%;box-sizing:border-box;padding:12px;border:1px solid var(--border);border-radius:8px;background:var(--bg-input);color:var(--text)">
+        </div>
+        <button type="button" class="btn-p" onclick="submitResetPassword()">Redefinir</button>
+      </div>
+    </div>
   </div>
 
   <!-- Register Screen -->
