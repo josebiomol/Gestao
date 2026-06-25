@@ -3,7 +3,7 @@
 // Login + CRUD + Segurança
 // ================================================
 
-const API = 'https://script.google.com/macros/s/AKfycbx1If5kO7BQCvu1onniW5gjWKj5yCqzOopgYlSOOlKBD4CDdugTsc_PYN4Jfl_zCzk/exec';
+const API = 'https://script.google.com/macros/s/AKfycbwI9Z0vGVkddzLd6DOrE4DGtdw-sTcwlMfGcldJR42txmRVVrhVcXrEakPn4-Ujfr0/exec';
 
 // Estado global
 const S = {
