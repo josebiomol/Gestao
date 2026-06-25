@@ -316,21 +316,94 @@ function showMain() {
 function renderHouseholds() {
   const list = $('hhList');
   
+  // Mostrar botão criar se tiver permissão
+  const canManage = S.role === 'owner' || (S.permissions || []).includes('manage_lojas');
+  const createBtn = $('createHHBtn');
+  if (createBtn) createBtn.style.display = canManage ? 'block' : 'none';
+  
   if (!S.households || S.households.length === 0) {
     console.log('Nenhuma loja disponível');
     list.innerHTML = '<p style="padding:20px;text-align:center;color:var(--text-secondary)">Nenhuma loja disponível</p>';
     return;
   }
   
-  list.innerHTML = S.households.map(hh => `
-    <div class="hh-card" onclick="selectHousehold('${hh.household_id}', '${hh.nome}')">
+  list.innerHTML = S.households.map(hh => {
+    const nomeEsc = String(hh.nome).replace(/'/g, "\\'");
+    const actions = canManage ? `
+      <div class="hh-actions" onclick="event.stopPropagation()">
+        <button class="hh-icon" onclick="openEditHousehold('${hh.household_id}', '${nomeEsc}')" title="Editar">✏️</button>
+        <button class="hh-icon" onclick="deleteHousehold('${hh.household_id}', '${nomeEsc}')" title="Excluir">✕</button>
+      </div>` : '<span>→</span>';
+    return `
+    <div class="hh-card" onclick="selectHousehold('${hh.household_id}', '${nomeEsc}')">
       <div>
         <p class="hh-name">${hh.nome}</p>
-        <p class="hh-meta">Clique para selecionar</p>
+        <p class="hh-meta">Clique para entrar</p>
       </div>
-      <span>→</span>
-    </div>
-  `).join('');
+      ${actions}
+    </div>`;
+  }).join('');
+}
+
+// ========== CRIAR / EDITAR / EXCLUIR LOJA ==========
+function openCreateHousehold() {
+  const nome = prompt('Nome da nova casa / loja:');
+  if (nome === null) return;
+  const nomeTrim = nome.trim();
+  if (!nomeTrim) { toast('Nome obrigatório', 'danger'); return; }
+  createHousehold(nomeTrim);
+}
+
+async function createHousehold(nome) {
+  toast('Criando...', 'loading');
+  try {
+    const d = await jsonp(`${API}?action=createHousehold&nome=${encodeURIComponent(nome)}&email=${encodeURIComponent(S.email)}&senha=${encodeURIComponent(S.senha)}`);
+    if (d.error) { toast(d.error, 'danger'); return; }
+    // Adicionar à lista local
+    S.households.push({ household_id: d.household_id, nome: d.nome, org_id: S.orgId });
+    renderHouseholds();
+    toast('✓ Loja criada', 'success');
+  } catch (err) {
+    toast('Erro ao criar loja', 'danger');
+  }
+}
+
+function openEditHousehold(hhId, nomeAtual) {
+  const nome = prompt('Novo nome da loja:', nomeAtual);
+  if (nome === null) return;
+  const nomeTrim = nome.trim();
+  if (!nomeTrim) { toast('Nome obrigatório', 'danger'); return; }
+  updateHousehold(hhId, nomeTrim);
+}
+
+async function updateHousehold(hhId, nome) {
+  toast('Salvando...', 'loading');
+  try {
+    const d = await jsonp(`${API}?action=updateHousehold&household_id_target=${encodeURIComponent(hhId)}&nome=${encodeURIComponent(nome)}&email=${encodeURIComponent(S.email)}&senha=${encodeURIComponent(S.senha)}`);
+    if (d.error) { toast(d.error, 'danger'); return; }
+    // Atualizar lista local
+    const hh = S.households.find(h => String(h.household_id) === String(hhId));
+    if (hh) hh.nome = nome;
+    renderHouseholds();
+    toast('✓ Loja atualizada', 'success');
+  } catch (err) {
+    toast('Erro ao atualizar', 'danger');
+  }
+}
+
+async function deleteHousehold(hhId, nome) {
+  if (!confirm(`Excluir a loja "${nome}"?\n\nATENÇÃO: Todos os itens e membros vinculados a ela serão apagados permanentemente.`)) return;
+  toast('Excluindo...', 'loading');
+  try {
+    const d = await jsonp(`${API}?action=deleteHousehold&household_id_target=${encodeURIComponent(hhId)}&email=${encodeURIComponent(S.email)}&senha=${encodeURIComponent(S.senha)}`);
+    if (d.error) { toast(d.error, 'danger'); return; }
+    // Remover da lista local
+    S.households = S.households.filter(h => String(h.household_id) !== String(hhId));
+    renderHouseholds();
+    toast('✓ Loja excluída', 'success');
+  } catch (err) {
+    toast('Erro ao excluir', 'danger');
+  }
 }
 
 function selectHousehold(hhId, nome) {
