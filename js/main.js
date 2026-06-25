@@ -1071,12 +1071,12 @@ function renderAccessScheduleTable() {
     const row = document.createElement('div');
     row.className = 'schedule-row';
     row.innerHTML = `
-      <label style="margin:0;padding:0">
+      <label style="margin:0;padding:0;display:flex;align-items:center;gap:6px;min-width:90px">
         <input type="checkbox" class="schedule-checkbox" data-dia="${dia}" ${dia !== 'Domingo' && dia !== 'Sábado' ? 'checked' : ''}>
+        <span style="font-size:13px;font-weight:600">${dia}</span>
       </label>
-      <span style="font-size:13px;font-weight:600;min-width:70px">${dia}</span>
-      <input type="time" class="schedule-time" data-dia="${dia}" data-type="start" value="08:00" disabled style="font-size:12px">
-      <input type="time" class="schedule-time" data-dia="${dia}" data-type="end" value="18:00" disabled style="font-size:12px">
+      <input type="time" class="schedule-time" data-dia="${dia}" data-type="start" value="08:00" disabled>
+      <input type="time" class="schedule-time" data-dia="${dia}" data-type="end" value="18:00" disabled>
     `;
     
     const checkbox = row.querySelector('.schedule-checkbox');
