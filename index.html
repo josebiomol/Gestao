@@ -299,7 +299,7 @@
     <div class="topbar">
       <div class="topbar-left">
         <div style="display:flex;align-items:center;gap:8px;cursor:pointer" onclick="loadAndShowHouseholds()" title="Selecionar outra loja">
-          <span style="font-size:24px">🏠</span>
+          <span id="orgLogo" style="font-size:24px;width:32px;height:32px;display:flex;align-items:center;justify-content:center;border-radius:8px;background-size:cover;background-position:center;overflow:hidden">🏢</span>
           <h1 class="app-title" id="appTitle">Gestão</h1>
         </div>
         <div style="display:flex;align-items:center;gap:8px;margin-left:auto">
@@ -756,6 +756,16 @@
       <div>
         <label style="display:block;font-size:12px;color:var(--text-secondary);margin-bottom:6px">Confirmar nova senha</label>
         <input type="password" id="myDataPasswordConfirm" placeholder="Repita a nova senha" style="width:100%;box-sizing:border-box;padding:10px;border:1px solid var(--border);border-radius:8px;background:var(--bg-input);color:var(--text)">
+      </div>
+
+      <!-- LOGO DA EMPRESA (só owner) -->
+      <div id="orgLogoSection" style="display:none;border-top:1px solid var(--border);padding-top:14px">
+        <label style="display:block;font-size:13px;font-weight:700;color:var(--text);margin-bottom:8px">🏢 Logo da empresa</label>
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px">
+          <div id="orgLogoPreview" style="width:60px;height:60px;border-radius:12px;background-size:cover;background-position:center;background-color:var(--bg-input);display:flex;align-items:center;justify-content:center;font-size:28px;border:1px solid var(--border)">🏢</div>
+          <input type="file" id="orgLogoInput" accept="image/*" style="flex:1;font-size:13px;color:var(--text)">
+        </div>
+        <p style="font-size:11px;color:var(--text-secondary);margin:0">Aparece no topo do app para todos os membros. Alta resolução recomendada.</p>
       </div>
     </div>
     <div style="padding:16px;border-top:1px solid var(--border);display:flex;gap:8px">
