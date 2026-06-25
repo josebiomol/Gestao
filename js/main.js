@@ -1455,9 +1455,14 @@ function initBulkEditUI() {
 
 // Inicializar UI ao carregar
 // ========== SETTINGS / CONFIGURAÇÕES ==========
-function openSettings() {
+async function openSettings() {
   $('settingsModal').classList.remove('hidden');
   switchSettingsTab('usuarios');
+  // Garantir que S.households esteja completo (para o seletor de lojas no cadastro de membros)
+  try {
+    const d = await jsonp(`${API}?action=getHouseholds&email=${encodeURIComponent(S.email)}&senha=${encodeURIComponent(S.senha)}`);
+    if (d && d.households) S.households = d.households;
+  } catch (err) {}
 }
 
 function closeSettings() {
