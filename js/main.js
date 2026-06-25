@@ -130,8 +130,26 @@ function toast(msg, type = 'info') {
   setTimeout(() => t.classList.remove('show'), 3000);
 }
 
+// JSONP real - usa script tags para evitar CORS
 function jsonp(url) {
-  return fetch(url).then(r => r.json());
+  return new Promise((resolve, reject) => {
+    const callbackName = 'callback_' + Date.now();
+    window[callbackName] = (data) => {
+      delete window[callbackName];
+      resolve(data);
+    };
+    const script = document.createElement('script');
+    const separator = url.indexOf('?') > -1 ? '&' : '?';
+    script.src = url + separator + 'callback=' + callbackName;
+    script.onerror = () => reject(new Error('JSONP error'));
+    document.body.appendChild(script);
+    setTimeout(() => {
+      if (window[callbackName]) {
+        delete window[callbackName];
+        reject(new Error('JSONP timeout'));
+      }
+    }, 10000);
+  });
 }
 
 // Para payloads grandes (ex: imagens base64) que estouram o limite de URL do GET
