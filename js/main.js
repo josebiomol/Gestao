@@ -312,6 +312,7 @@ $('loginForm').addEventListener('submit', async (e) => {
     renderOrgLogo();
 
     // Mostrar households ou main
+    if (d._debug) console.log('DEBUG households:', JSON.stringify(d._debug, null, 2));
     if (d.households && d.households.length > 0) {
       S.households = d.households;
       $('householdsView').classList.remove('hidden');
